@@ -134,7 +134,7 @@ window.addEventListener(
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
         const vertexCoords = gl.getAttribLocation(program, "aPosition");
-        const textCoords = gl.getAttribLocation(program, "vTextureCoord");
+        const textCoords = gl.getAttribLocation(program, "aTextureCoord");
 
         const buf = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -158,6 +158,8 @@ window.addEventListener(
 
         gl.vertexAttribPointer(textCoords, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(textCoords);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
 
         const dataArray = new Float32Array([
             -1, -1,
@@ -189,12 +191,17 @@ window.addEventListener(
         setVec2FUniform(gl, program, "resolution", [canvas.width, canvas.height]);
         setVec2FUniform(gl, program, "size", [6, 3]);
 
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-        gl.useProgram(null);
-        if (program) {
-          gl.deleteProgram(program);
+        const render = () => {
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            requestAnimationFrame(render);
         }
+
+        requestAnimationFrame(render);
+
+        // gl.useProgram(null);
+        // if (program) {
+        //   gl.deleteProgram(program);
+        // }
     },
     false,
 );
