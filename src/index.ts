@@ -47,6 +47,7 @@ window.addEventListener(
             console.error('canvas is null');
             return;
         }
+
         // Getting the WebGL rendering context.
 
         /** @type {WebGLRenderingContext} */
@@ -168,10 +169,41 @@ window.addEventListener(
         // Tell the shader we bound the texture to texture unit 0
         gl.uniform1i(locations.sampler, 0);
 
-        setVec2FUniform(gl, program, "resolution", [canvas.width, canvas.height]);
-        setVec2FUniform(gl, program, "size", [6, 3]);
+        setFUniform(gl, program, "l", 100);
 
+        const canvasContainer = document.querySelector(".canvas-container")!;
+        // canvasContainer.addEventListener('scroll', evt => {
+        //     console.log('scroll', canvasContainer.scrollLeft, canvasContainer.scrollTop);
+        // });
+
+        const fullSize = [
+            canvasContainer.clientWidth,
+            canvasContainer.clientHeight
+        ]
+        
         const render = () => {
+            // const resolution = [canvas.width, canvas.height];
+            // const resolution = [canvas.clientWidth, canvas.clientHeight];
+            const resolution = fullSize;
+
+            canvas.width = resolution[0];
+            canvas.height = resolution[1];
+
+            const offset = [
+                canvasContainer.scrollLeft,
+                canvasContainer.scrollTop,
+            ];
+
+            const viewSize = [canvas.clientWidth, canvas.clientHeight];
+
+            // const offset = [0, 0];
+
+            // console.log(offset)
+
+            gl.viewport(offset[0], offset[1], viewSize[0] / 2, viewSize[1] /2 );
+            // console.log(resolution)
+            setVec2FUniform(gl, program, "resolution", resolution);
+            setVec2FUniform(gl, program, "offset", offset);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
             requestAnimationFrame(render);
         }

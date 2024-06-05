@@ -10,10 +10,12 @@
     <script src="build/index.js" defer></script>
 </head>
 <body>
-    <div class="canvas-container">
-        <canvas id="canvas"></canvas>
+    <div class="main">
+        <div class="canvas-container">
+            <canvas id="canvas"></canvas>
+        </div>
     </div>
-
+    
     <script id="vertex-shader" type="x-shader/x-vertex">
         #version 100
 
@@ -34,26 +36,14 @@
         precision mediump float;
 
         uniform vec2 resolution;
-        uniform vec2 size;
+        uniform vec2 offset;
+        uniform float l;
 
         uniform sampler2D uSampler;
 
         varying highp vec2 vTextureCoord;
 
         float stroke = 1.;
-        
-        float grid(vec2 fragCoord, float space, float gridWidth)
-        {
-            vec2 p  = fragCoord + vec2(.5);
-            vec2 size = vec2(gridWidth);
-            
-            vec2 a1 = mod(p - size, space);
-            vec2 a2 = mod(p + size, space);
-            vec2 a = a2 - a1;
-               
-            float g = min(a.x, a.y);
-            return clamp(g, 0., 1.0);
-        }
 
         float getBounds(float a) {
             float stroke = 0.02;
@@ -65,10 +55,12 @@
 
         void main()
         {   
+            //float dx = 30.;
+
             vec2 st = (gl_FragCoord.xy) / resolution.xy;
 
-            float x = fract(st.x * size.y);
-            float y = fract(st.y * size.x);
+            float x = mod(gl_FragCoord.x + offset.x, l) / l;
+            float y = mod(gl_FragCoord.y - offset.y, l) / l;
 
             float bx = getBounds(x);
             float by = getBounds(y);
@@ -77,14 +69,15 @@
                 gl_FragColor.rgb = vec3(0.);
                 gl_FragColor.a = 1.0;
             } else {
-                //gl_FragColor.rgb = vec3(1.);
-                //gl_FragColor.a = 1.0;
-                gl_FragColor = texture2D(uSampler, vec2(x, y));
+                float tScale = 0.8;
+
+                vec2 td = vec2(1. / tScale / 2. - 0.5);
+                vec2 tCoords = vec2(x, y) / vec2(tScale) - td;
+                
+                gl_FragColor = texture2D(uSampler, tCoords);
             }
 
-            //gl_FragColor = vec4(x, 0., 0., 1.);
-
-            //gl_FragColor = texture2D(uSampler, vec2(x, y));
+            //gl_FragColor = vec4(st.x + offset.x / resolution.x, 0., 0., 1.);
         }
     </script>
 </body>
