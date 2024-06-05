@@ -67,20 +67,24 @@
         {   
             vec2 st = (gl_FragCoord.xy) / resolution.xy;
 
-            float x = getBounds(fract(st.x * size.y));
-            float y = getBounds(fract(st.y * size.x));
+            float x = fract(st.x * size.y);
+            float y = fract(st.y * size.x);
 
-            if (x == 1. || y == 1.) {
+            float bx = getBounds(x);
+            float by = getBounds(y);
+
+            if (bx == 1. || by == 1.) {
                 gl_FragColor.rgb = vec3(0.);
+                gl_FragColor.a = 1.0;
             } else {
-                gl_FragColor.rgb = vec3(1.);
+                //gl_FragColor.rgb = vec3(1.);
+                //gl_FragColor.a = 1.0;
+                gl_FragColor = texture2D(uSampler, vec2(x, y));
             }
 
-            //gl_FragColor.rgb = vec3(0.0);
+            //gl_FragColor = vec4(x, 0., 0., 1.);
 
-            gl_FragColor = texture2D(uSampler, vTextureCoord);
-
-            //gl_FragColor.a = 1.0;
+            //gl_FragColor = texture2D(uSampler, vec2(x, y));
         }
     </script>
 </body>
