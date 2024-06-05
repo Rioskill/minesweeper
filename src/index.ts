@@ -1,4 +1,5 @@
 import { loadTexture } from "./texture";
+import { GLFloatBuffer } from "./buffer";
 
 const ROWS = 6;
 const COLS = 6;
@@ -29,25 +30,6 @@ function generateMatrix(rows: number, cols: number, mines: number) {
     })
 
     return matrix;
-}
-
-function initializeAttributes(gl: WebGLRenderingContext) {
-    gl.enableVertexAttribArray(0);
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.vertexAttribPointer(0, 1, gl.FLOAT, false, 0, 0);
-  
-    return buffer
-  }
-  
-  function cleanup(gl: WebGLRenderingContext, buffer: WebGLBuffer | null, program: WebGLProgram) {
-    gl.useProgram(null);
-    if (buffer) {
-      gl.deleteBuffer(buffer);
-    }
-    if (program) {
-      gl.deleteProgram(program);
-    }
 }
 
 window.addEventListener(
@@ -125,41 +107,25 @@ window.addEventListener(
 
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
             const linkErrLog = gl.getProgramInfoLog(program);
-            // cleanup(gl, buffer, program);
             console.error(`Shader program did not link successfully. Error log: ${linkErrLog}`)
             return;
         }
 
-        const texture = loadTexture(gl, "/textures/bomb.png");
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        const texture = loadTexture(gl, "/textures/bomb.png");
 
-        const vertexCoords = gl.getAttribLocation(program, "aPosition");
-        const textCoords = gl.getAttribLocation(program, "aTextureCoord");
+        const locations = {
+            vertexCoords: gl.getAttribLocation(program, "aPosition"),
+            textureCoords: gl.getAttribLocation(program, "aTextureCoord"),
+            sampler: gl.getUniformLocation(program, "uSampler")
+        }
 
-        const buf = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-        gl.vertexAttribPointer(vertexCoords, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(vertexCoords);
-
-        
-        const textureBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, textureBuffer);
-
-        const textureCoords = new Float32Array([
-            0, 0,
-            0, 1,
-             1, 0,
-            0, 1,
-             1, 0,
-             1, 1
-        ]);
-
-        gl.bufferData(gl.ARRAY_BUFFER, textureCoords, gl.STATIC_DRAW);
-
-        gl.vertexAttribPointer(textCoords, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(textCoords);
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        const vBuf = new GLFloatBuffer({
+            gl: gl,
+            location: locations.vertexCoords,
+            size: 2,
+            type: gl.ARRAY_BUFFER
+        })
 
         const dataArray = new Float32Array([
             -1, -1,
@@ -170,9 +136,25 @@ window.addEventListener(
              1, 1
         ]);
 
-        // const sizeInBytes = dataArray.length * dataArray.BYTES_PER_ELEMENT;        
+        vBuf.setData(dataArray);
 
-        gl.bufferData(gl.ARRAY_BUFFER, dataArray, gl.STATIC_DRAW);
+        const textureBuffer = new GLFloatBuffer({
+            gl: gl,
+            location: locations.textureCoords,
+            size: 2,
+            type: gl.ARRAY_BUFFER
+        })
+        
+        const textureCoords = new Float32Array([
+            0, 0,
+            0, 1,
+             1, 0,
+            0, 1,
+             1, 0,
+             1, 1
+        ]);
+
+        textureBuffer.setData(textureCoords);
 
         gl.useProgram(program);
 
@@ -183,10 +165,8 @@ window.addEventListener(
         // Bind the texture to texture unit 0
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        const sampler = gl.getUniformLocation(program, "uSampler");
-
         // Tell the shader we bound the texture to texture unit 0
-        gl.uniform1i(sampler, 0);
+        gl.uniform1i(locations.sampler, 0);
 
         setVec2FUniform(gl, program, "resolution", [canvas.width, canvas.height]);
         setVec2FUniform(gl, program, "size", [6, 3]);
