@@ -43,11 +43,9 @@
 
         varying highp vec2 vTextureCoord;
 
-        float stroke = 1.;
-
         float getBounds(float a) {
-            float stroke = 0.02;
-            if (a < stroke || a > 1. - stroke) {
+            float stroke = 1.;
+            if (a < stroke || a > l - stroke) {
                 return 1.;
             }
             return 0.;
@@ -59,11 +57,14 @@
 
             vec2 st = (gl_FragCoord.xy) / resolution.xy;
 
+            float origX = mod(gl_FragCoord.x + offset.x, l);
+            float origY = mod(gl_FragCoord.y - offset.y, l);
+
             float x = mod(gl_FragCoord.x + offset.x, l) / l;
             float y = mod(gl_FragCoord.y - offset.y, l) / l;
 
-            float bx = getBounds(x);
-            float by = getBounds(y);
+            float bx = getBounds(origX);
+            float by = getBounds(origY);
 
             if (bx == 1. || by == 1.) {
                 gl_FragColor.rgb = vec3(0.);
@@ -73,6 +74,8 @@
 
                 vec2 td = vec2(1. / tScale / 2. - 0.5);
                 vec2 tCoords = vec2(x, y) / vec2(tScale) - td;
+
+                tCoords.x = (tCoords.x + 1.) * 0.1;
                 
                 gl_FragColor = texture2D(uSampler, tCoords);
             }

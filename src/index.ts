@@ -1,5 +1,5 @@
+import { GLBuffer } from "./buffer";
 import { loadTexture } from "./texture";
-import { GLFloatBuffer } from "./buffer";
 
 const ROWS = 6;
 const COLS = 6;
@@ -113,19 +113,22 @@ window.addEventListener(
         }
 
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        const texture = loadTexture(gl, "/textures/bomb.png");
+        // const texture = loadTexture(gl, "/textures/bomb.png");
+        const texture = loadTexture(gl, "/textures/digits.png");
 
         const locations = {
             vertexCoords: gl.getAttribLocation(program, "aPosition"),
             textureCoords: gl.getAttribLocation(program, "aTextureCoord"),
-            sampler: gl.getUniformLocation(program, "uSampler")
+            digitNum: gl.getAttribLocation(program, "digitNum"),
+            sampler: gl.getUniformLocation(program, "uSampler"),
         }
 
-        const vBuf = new GLFloatBuffer({
+        const vBuf = new GLBuffer({
             gl: gl,
             location: locations.vertexCoords,
             size: 2,
-            type: gl.ARRAY_BUFFER
+            type: gl.ARRAY_BUFFER,
+            dataType: gl.FLOAT
         })
 
         const dataArray = new Float32Array([
@@ -139,23 +142,37 @@ window.addEventListener(
 
         vBuf.setData(dataArray);
 
-        const textureBuffer = new GLFloatBuffer({
-            gl: gl,
-            location: locations.textureCoords,
-            size: 2,
-            type: gl.ARRAY_BUFFER
-        })
+        // const textureBuffer = new GLFloatBuffer({
+        //     gl: gl,
+        //     location: locations.textureCoords,
+        //     size: 2,
+        //     type: gl.ARRAY_BUFFER
+        // })
         
-        const textureCoords = new Float32Array([
-            0, 0,
-            0, 1,
-             1, 0,
-            0, 1,
-             1, 0,
-             1, 1
-        ]);
+        // const textureCoords = new Float32Array([
+        //     0, 0,
+        //     0, 1,
+        //      1, 0,
+        //     0, 1,
+        //      1, 0,
+        //      1, 1
+        // ]);
 
-        textureBuffer.setData(textureCoords);
+        // textureBuffer.setData(textureCoords);
+
+        // const digitBuffer = new GLBuffer({
+        //     gl: gl,
+        //     location: locations.digitNum,
+        //     size: 1,
+        //     type: gl.ARRAY_BUFFER,
+        //     dataType: gl.BYTE
+        // })
+
+        // const digits = new Uint8Array([
+        //     0, 1, 2, 3
+        // ]);
+
+        // digitBuffer.setData(digits);
 
         gl.useProgram(program);
 
@@ -169,12 +186,14 @@ window.addEventListener(
         // Tell the shader we bound the texture to texture unit 0
         gl.uniform1i(locations.sampler, 0);
 
-        setFUniform(gl, program, "l", 100);
-
         const canvasContainer = document.querySelector(".canvas-container")!;
-        // canvasContainer.addEventListener('scroll', evt => {
-        //     console.log('scroll', canvasContainer.scrollLeft, canvasContainer.scrollTop);
-        // });
+
+        const originalL = 50;
+        const originalWidth = window.innerWidth;
+
+        // this.window.addEventListener('resize', evt => {
+        //     console.log('resize', originalWidth / this.window.innerWidth);
+        // }, true)
 
         const fullSize = [
             canvasContainer.clientWidth,
@@ -186,6 +205,8 @@ window.addEventListener(
             // const resolution = [canvas.clientWidth, canvas.clientHeight];
             const resolution = fullSize;
 
+            const viewSize = [canvas.clientWidth, canvas.clientHeight];
+
             canvas.width = resolution[0];
             canvas.height = resolution[1];
 
@@ -194,16 +215,11 @@ window.addEventListener(
                 canvasContainer.scrollTop,
             ];
 
-            const viewSize = [canvas.clientWidth, canvas.clientHeight];
-
-            // const offset = [0, 0];
-
-            // console.log(offset)
-
-            gl.viewport(offset[0], offset[1], viewSize[0] / 2, viewSize[1] /2 );
+            gl.viewport(0, 0, viewSize[0] / 2, viewSize[1] / 2);
             // console.log(resolution)
             setVec2FUniform(gl, program, "resolution", resolution);
             setVec2FUniform(gl, program, "offset", offset);
+            setFUniform(gl, program, "l", originalL * originalWidth / this.window.innerWidth);
             gl.drawArrays(gl.TRIANGLES, 0, 6);
             requestAnimationFrame(render);
         }

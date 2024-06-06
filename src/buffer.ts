@@ -3,13 +3,15 @@ interface GLBufferProps {
     location: number
     size: number
     type: GLuint
+    dataType: GLenum
 }
 
-export class GLFloatBuffer {
+export class GLBuffer {
     gl: WebGLRenderingContext
     location: number
     size: number
     type: GLuint
+    dataType: GLenum
     buf: WebGLBuffer
 
     constructor(props: GLBufferProps) {
@@ -17,6 +19,7 @@ export class GLFloatBuffer {
         this.location = props.location;
         this.size = props.size;
         this.type = props.type;
+        this.dataType = props.dataType;
 
         const buf = this.gl.createBuffer();
 
@@ -26,11 +29,11 @@ export class GLFloatBuffer {
 
         this.buf = buf;
         this.bind();
-        this.gl.vertexAttribPointer(props.location, props.size, this.gl.FLOAT, false, 0, 0);
+        this.gl.vertexAttribPointer(props.location, props.size, this.dataType, false, 0, 0);
         this.gl.enableVertexAttribArray(this.location);
     }
 
-    setData(data: Float32Array, usage?: GLenum) {
+    setData(data: AllowSharedBufferSource, usage?: GLenum) {
         this.bind();
         this.gl.bufferData(this.type, data, usage || this.gl.STATIC_DRAW);
     }
