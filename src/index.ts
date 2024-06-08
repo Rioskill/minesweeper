@@ -1,17 +1,33 @@
 import { GLBuffer } from "./buffer";
 import { loadTexture } from "./texture";
 
-const ROWS = 6;
-const COLS = 6;
+const ROWS = 10;
+const COLS = 10;
 
 const MINES = 6;
 
-const range = (n: number) => {
-    return [...Array(n).keys()]
+const BOMB_VALUE = 11;
+
+const range = (n: number, m?: number): number[] => {
+    if (m === undefined) {
+        return [...Array(n).keys()];
+    }
+
+    return range(m - n).map(x => x + n);
+}
+
+const permutations = <T1, T2>(a: T1[], b: T2[]) => {
+    let res: (T1|T2)[][] = [];
+    for (let i = 0; i < a.length; i++) {
+        for (let j = 0; j < b.length; j++) {
+            res.push([a[i], b[j]]);
+        }
+    }
+    return res;
 }
 
 const randInt = (max: number) => {
-    return Math.floor(Math.random() * max);
+    return Math.floor(Math.random() * (max));
 }
 
 function generateMatrix(rows: number, cols: number, mines: number) {
@@ -21,15 +37,40 @@ function generateMatrix(rows: number, cols: number, mines: number) {
         let row = randInt(rows);
         let col = randInt(cols);
 
-        while (matrix[row][col] === -1) {
+        while (matrix[row][col] === BOMB_VALUE) {
             row = randInt(rows);
             col = randInt(cols);
         }
 
-        matrix[row][col] = -1;
+        matrix[row][col] = BOMB_VALUE;
     })
 
-    return matrix;
+    const hasBomb = (i: number, j: number) => {
+        if (i <= 0 ||
+            i >= ROWS - 1 ||
+            j <= 0 ||
+            j >= COLS - 1) {
+                return false;
+            }
+
+        return matrix[i][j] === BOMB_VALUE;
+    }
+
+    const calcValue = (y: number, x: number) => {
+        if (matrix[y][x] === BOMB_VALUE) {
+            return BOMB_VALUE;
+        }
+
+        const indices = range(-1, 2);
+        const bombCnt = permutations(indices, indices)
+                .filter(([i, j]) => !(i === 0 && j === 0))
+                .map(([i, j]) => (hasBomb(y + i, x + j) ? 1 : 0) as number)
+                .reduce((sum, n) => sum + n, 0)
+
+        return bombCnt + 1;
+    }
+
+    return matrix.map((row, i) => row.map((_, j) => calcValue(i, j)));
 }
 
 window.addEventListener(
@@ -130,35 +171,111 @@ window.addEventListener(
             type: gl.ARRAY_BUFFER,
             dataType: gl.FLOAT
         })
-
-        const dataArray = new Float32Array([
-            -1, -1,
-            -1, 1,
-             1, -1,
-            -1, 1,
-             1, -1,
-             1, 1
-        ]);
-
-        vBuf.setData(dataArray);
-
-        // const textureBuffer = new GLFloatBuffer({
-        //     gl: gl,
-        //     location: locations.textureCoords,
-        //     size: 2,
-        //     type: gl.ARRAY_BUFFER
-        // })
         
-        // const textureCoords = new Float32Array([
+        const createVertexGrid = () => {
+            const grid: number[] = [];
+
+            const width = 1 / COLS;
+            const height = 1 / ROWS;
+
+            const mask = [
+                [0, 0],
+                [0, 1],
+                [1, 0],
+                [0, 1],
+                [1, 0],
+                [1, 1],
+            ]
+
+            for (let i = 0; i < ROWS; i++) {
+                const y = i * height;
+
+                for (let j = 0; j < COLS; j++) {
+                    const x = j * width;
+
+                    // console.log(mask.map(([a, b]) => [x + a * width, y + b * height]))
+
+                    grid.push(
+                        ...mask.flatMap(([a, b]) => [x + a * width, y + b * height])
+                    );
+                }
+            }
+
+            return grid;
+        }
+
+        const generateMap = () => {
+            const map: number[][] = [];
+
+            for (let i = 0; i < ROWS; i++) {
+                map.push([]);
+                for (let j = 0; j < COLS; j++) {
+                    map[i][j] = randInt(10) + 1;
+                }
+            }
+
+            return map;
+        }
+
+        const createTextureCoords = (map: number[][]) => {
+            const coords: number[] = [];
+
+            const mask = [
+                [0, 0],
+                [0, 1],
+                [1, 0],
+                [0, 1],
+                [1, 0],
+                [1, 1]
+            ]
+
+            const width = 1 / 11;
+
+            for (let i = 0; i < ROWS * COLS; i++) {
+                // const num = (x: number) => x % 9;
+                const num = (x: number) => map[Math.floor(x / ROWS)][x % ROWS] - 1;
+                coords.push(
+                    ...mask.flatMap(([a, b]) => [(num(i) + a) * width, b])
+                )
+            }
+
+            return coords;
+        }
+
+        const dataArray = createVertexGrid();
+
+        // console.log(dataArray)
+
+        vBuf.setData(new Float32Array(dataArray));
+
+        const textureBuffer = new GLBuffer({
+            gl: gl,
+            location: locations.textureCoords,
+            size: 2,
+            type: gl.ARRAY_BUFFER,
+            dataType: gl.FLOAT,
+        })
+        
+        // const textureCoords = Array(ROWS * COLS).fill([
         //     0, 0,
         //     0, 1,
-        //      1, 0,
+        //     0.1, 0,
         //     0, 1,
-        //      1, 0,
-        //      1, 1
-        // ]);
+        //     0.1, 0,
+        //     0.1, 1
+        // ]).flat();
 
-        // textureBuffer.setData(textureCoords);
+        // const map = generateMap();
+
+        const map = generateMatrix(ROWS, COLS, MINES);
+
+        console.log(map);
+
+        const textureCoords = createTextureCoords(map);
+
+        // console.log(textureCoords)
+
+        textureBuffer.setData(new Float32Array(textureCoords));
 
         // const digitBuffer = new GLBuffer({
         //     gl: gl,
@@ -169,7 +286,12 @@ window.addEventListener(
         // })
 
         // const digits = new Uint8Array([
-        //     0, 1, 2, 3
+        //     0, 0,
+        //     0, 0,
+        //     0, 0,
+        //     0, 0,
+        //     0, 0,
+        //     0, 0, 
         // ]);
 
         // digitBuffer.setData(digits);
@@ -187,40 +309,51 @@ window.addEventListener(
         gl.uniform1i(locations.sampler, 0);
 
         const canvasContainer = document.querySelector(".canvas-container")!;
-
-        const originalL = 50;
-        const originalWidth = window.innerWidth;
-
-        // this.window.addEventListener('resize', evt => {
-        //     console.log('resize', originalWidth / this.window.innerWidth);
-        // }, true)
-
-        const fullSize = [
-            canvasContainer.clientWidth,
-            canvasContainer.clientHeight
-        ]
         
+        const l = 50;
+
+        // const originalL = fullSize[0] / COLS;
+        // const originalWidth = window.innerWidth;
+
         const render = () => {
+            const fullSize = [
+                canvasContainer.clientWidth,
+                canvasContainer.clientHeight
+            ]
+
             // const resolution = [canvas.width, canvas.height];
             // const resolution = [canvas.clientWidth, canvas.clientHeight];
             const resolution = fullSize;
+
+            // const resolution = [
+            //     l * COLS,
+            //     l * ROWS
+            // ]
 
             const viewSize = [canvas.clientWidth, canvas.clientHeight];
 
             canvas.width = resolution[0];
             canvas.height = resolution[1];
 
-            const offset = [
-                canvasContainer.scrollLeft,
-                canvasContainer.scrollTop,
-            ];
+            // const offset = [
+            //     canvasContainer.scrollLeft,
+            //     canvasContainer.scrollTop,
+            // ];
 
-            gl.viewport(0, 0, viewSize[0] / 2, viewSize[1] / 2);
+            const offset = [0, 0];
+
+            // console.log('l', resolution[0] / COLS);
+
+            gl.viewport(0, 0, viewSize[0], viewSize[1]);
             // console.log(resolution)
             setVec2FUniform(gl, program, "resolution", resolution);
             setVec2FUniform(gl, program, "offset", offset);
-            setFUniform(gl, program, "l", originalL * originalWidth / this.window.innerWidth);
-            gl.drawArrays(gl.TRIANGLES, 0, 6);
+            setVec2FUniform(gl, program, "size", [COLS, ROWS]);
+
+            setFUniform(gl, program, "l", resolution[0] / COLS);
+            gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);
+            // gl.drawArrays(gl.TRIANGLES, 0, 6);
+
             requestAnimationFrame(render);
         }
 

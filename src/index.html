@@ -18,16 +18,28 @@
     
     <script id="vertex-shader" type="x-shader/x-vertex">
         #version 100
+        precision mediump float;
 
         attribute vec2 aPosition;
         attribute vec2 aTextureCoord;
+        
+        uniform vec2 resolution;
+        uniform vec2 offset;
+        uniform float l;
+        uniform vec2 size;
 
+        varying vec2 pos;
         varying highp vec2 vTextureCoord;
 
         void main()
         {
-          gl_Position = vec4(aPosition.x, aPosition.y, 0.0, 1.0);
-          vTextureCoord = aTextureCoord;
+            //float size = resolution.x / l;
+
+            pos = aPosition * size;
+
+            gl_Position = vec4(aPosition * 2. - 1., 0.0, 1.0);
+
+            vTextureCoord = aTextureCoord;
         }
     </script>
 
@@ -38,47 +50,37 @@
         uniform vec2 resolution;
         uniform vec2 offset;
         uniform float l;
+        uniform vec2 size;
 
         uniform sampler2D uSampler;
 
+        varying vec2 pos;
         varying highp vec2 vTextureCoord;
-
-        float getBounds(float a) {
-            float stroke = 1.;
-            if (a < stroke || a > l - stroke) {
-                return 1.;
-            }
-            return 0.;
-        }
 
         void main()
         {   
-            //float dx = 30.;
+            vec2 st = (gl_FragCoord.xy) / resolution;
 
-            vec2 st = (gl_FragCoord.xy) / resolution.xy;
+            vec2 p = fract(pos) * resolution / size.x;
 
-            float origX = mod(gl_FragCoord.x + offset.x, l);
-            float origY = mod(gl_FragCoord.y - offset.y, l);
+            vec2 maxP = resolution / size;
 
-            float x = mod(gl_FragCoord.x + offset.x, l) / l;
-            float y = mod(gl_FragCoord.y - offset.y, l) / l;
+            float stroke = 2.;
 
-            float bx = getBounds(origX);
-            float by = getBounds(origY);
-
-            if (bx == 1. || by == 1.) {
-                gl_FragColor.rgb = vec3(0.);
-                gl_FragColor.a = 1.0;
+            if (p.x < stroke ||
+                p.x > maxP.x - stroke || 
+                p.y < stroke || 
+                p.y > maxP.y - stroke) {
+                gl_FragColor = vec4(vec3(0.), 1.);
             } else {
-                float tScale = 0.8;
-
-                vec2 td = vec2(1. / tScale / 2. - 0.5);
-                vec2 tCoords = vec2(x, y) / vec2(tScale) - td;
-
-                tCoords.x = (tCoords.x + 1.) * 0.1;
-                
-                gl_FragColor = texture2D(uSampler, tCoords);
+                gl_FragColor = texture2D(uSampler, vTextureCoord);
             }
+            
+            
+            
+            //gl_FragColor = vec4(vec3(fract(pos.x)), 1.0);
+
+            //gl_FragColor = vec4(0., 0., 1., 1.);
 
             //gl_FragColor = vec4(st.x + offset.x / resolution.x, 0., 0., 1.);
         }

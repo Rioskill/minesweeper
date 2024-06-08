@@ -28,4 +28,4 @@ Bun.serve({
     port: 3000,
 });
 
-console.log('server is running on port 3000');
+console.log('server is running on http://localhost:3000/');
