@@ -1,12 +1,15 @@
 import { GLBuffer } from "./buffer";
 import { loadTexture } from "./texture";
 
-const ROWS = 10;
-const COLS = 10;
+const ROWS = 20;
+const COLS = 20;
 
-const MINES = 6;
+const MINES = 30;
 
-const BOMB_VALUE = 11;
+const BOMB_VALUE = 10;
+
+const ROWL = 50;
+const COLL = 50;
 
 const range = (n: number, m?: number): number[] => {
     if (m === undefined) {
@@ -17,7 +20,7 @@ const range = (n: number, m?: number): number[] => {
 }
 
 const permutations = <T1, T2>(a: T1[], b: T2[]) => {
-    let res: (T1|T2)[][] = [];
+    let res: (T1 | T2)[][] = [];
     for (let i = 0; i < a.length; i++) {
         for (let j = 0; j < b.length; j++) {
             res.push([a[i], b[j]]);
@@ -46,12 +49,12 @@ function generateMatrix(rows: number, cols: number, mines: number) {
     })
 
     const hasBomb = (i: number, j: number) => {
-        if (i <= 0 ||
-            i >= ROWS - 1 ||
-            j <= 0 ||
-            j >= COLS - 1) {
-                return false;
-            }
+        if (i < 0 ||
+            i >= ROWS ||
+            j < 0 ||
+            j >= COLS) {
+            return false;
+        }
 
         return matrix[i][j] === BOMB_VALUE;
     }
@@ -62,12 +65,13 @@ function generateMatrix(rows: number, cols: number, mines: number) {
         }
 
         const indices = range(-1, 2);
-        const bombCnt = permutations(indices, indices)
-                .filter(([i, j]) => !(i === 0 && j === 0))
-                .map(([i, j]) => (hasBomb(y + i, x + j) ? 1 : 0) as number)
-                .reduce((sum, n) => sum + n, 0)
 
-        return bombCnt + 1;
+        const bombCnt = permutations(indices, indices)
+            .filter(([i, j]) => !(i === 0 && j === 0))
+            .map(([i, j]) => (hasBomb(y + i, x + j) ? 1 : 0) as number)
+            .reduce((sum, n) => sum + n, 0)
+
+        return bombCnt;
     }
 
     return matrix.map((row, i) => row.map((_, j) => calcValue(i, j)));
@@ -101,7 +105,7 @@ window.addEventListener(
             console.error('your browser does not support WebGL')
             return;
         }
-        
+
         gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
         let source = document.querySelector("#vertex-shader");
@@ -117,7 +121,7 @@ window.addEventListener(
 
         let error_log = gl.getShaderInfoLog(vertexShader);
         console.log(error_log);
-      
+
         source = document.querySelector("#fragment-shader");
 
         if (source === null) {
@@ -131,7 +135,7 @@ window.addEventListener(
 
         error_log = gl.getShaderInfoLog(fragmentShader);
         console.log(error_log);
-      
+
         let program = gl.createProgram();
 
         if (program === null) {
@@ -171,12 +175,15 @@ window.addEventListener(
             type: gl.ARRAY_BUFFER,
             dataType: gl.FLOAT
         })
-        
+
         const createVertexGrid = () => {
             const grid: number[] = [];
 
-            const width = 1 / COLS;
-            const height = 1 / ROWS;
+            // const width = 1 / COLS;
+            // const height = 1 / ROWS;
+
+            const width = COLL;
+            const height = ROWL;
 
             const mask = [
                 [0, 0],
@@ -204,19 +211,6 @@ window.addEventListener(
             return grid;
         }
 
-        const generateMap = () => {
-            const map: number[][] = [];
-
-            for (let i = 0; i < ROWS; i++) {
-                map.push([]);
-                for (let j = 0; j < COLS; j++) {
-                    map[i][j] = randInt(10) + 1;
-                }
-            }
-
-            return map;
-        }
-
         const createTextureCoords = (map: number[][]) => {
             const coords: number[] = [];
 
@@ -233,7 +227,7 @@ window.addEventListener(
 
             for (let i = 0; i < ROWS * COLS; i++) {
                 // const num = (x: number) => x % 9;
-                const num = (x: number) => map[Math.floor(x / ROWS)][x % ROWS] - 1;
+                const num = (x: number) => map[Math.floor(x / ROWS)][x % ROWS];
                 coords.push(
                     ...mask.flatMap(([a, b]) => [(num(i) + a) * width, b])
                 )
@@ -248,6 +242,24 @@ window.addEventListener(
 
         vBuf.setData(new Float32Array(dataArray));
 
+        // vBuf.setData(new Float32Array([
+        //     0, 0,
+        //     0, 500,
+        //     500, 0,
+        //     0, 500,
+        //     500, 0,
+        //     500, 500
+        // ]))
+
+        // vBuf.setData(new Float32Array([
+        //     -1, -1,
+        //     -1, 1,
+        //     1, -1,
+        //     -1, 1,
+        //     1, -1,
+        //     1, 1,
+        // ]));
+
         const textureBuffer = new GLBuffer({
             gl: gl,
             location: locations.textureCoords,
@@ -255,17 +267,6 @@ window.addEventListener(
             type: gl.ARRAY_BUFFER,
             dataType: gl.FLOAT,
         })
-        
-        // const textureCoords = Array(ROWS * COLS).fill([
-        //     0, 0,
-        //     0, 1,
-        //     0.1, 0,
-        //     0, 1,
-        //     0.1, 0,
-        //     0.1, 1
-        // ]).flat();
-
-        // const map = generateMap();
 
         const map = generateMatrix(ROWS, COLS, MINES);
 
@@ -273,28 +274,9 @@ window.addEventListener(
 
         const textureCoords = createTextureCoords(map);
 
-        // console.log(textureCoords)
+        console.log(textureCoords)
 
         textureBuffer.setData(new Float32Array(textureCoords));
-
-        // const digitBuffer = new GLBuffer({
-        //     gl: gl,
-        //     location: locations.digitNum,
-        //     size: 1,
-        //     type: gl.ARRAY_BUFFER,
-        //     dataType: gl.BYTE
-        // })
-
-        // const digits = new Uint8Array([
-        //     0, 0,
-        //     0, 0,
-        //     0, 0,
-        //     0, 0,
-        //     0, 0,
-        //     0, 0, 
-        // ]);
-
-        // digitBuffer.setData(digits);
 
         gl.useProgram(program);
 
@@ -309,50 +291,190 @@ window.addEventListener(
         gl.uniform1i(locations.sampler, 0);
 
         const canvasContainer = document.querySelector(".canvas-container")!;
-        
+
         const l = 50;
 
         // const originalL = fullSize[0] / COLS;
         // const originalWidth = window.innerWidth;
 
-        const render = () => {
-            const fullSize = [
-                canvasContainer.clientWidth,
-                canvasContainer.clientHeight
-            ]
+        const fullSize = [
+            COLL * COLS,
+            ROWL * ROWS
+        ]
 
+        const offset = [0, 0];
+
+        let viewSize = [
+            canvas.clientWidth,
+            canvas.clientHeight
+        ];
+
+        document.addEventListener('keydown', event => {
+            // console.log('press', event.code)
+            if (event.code === 'ArrowLeft') {
+                offset[0] = Math.max(-100, offset[0] - 10);
+            } else if (event.code === 'ArrowRight') {
+                offset[0] = Math.min(fullSize[0], offset[0] + 10);
+            } else if (event.code === 'ArrowDown') {
+                offset[1] = Math.max(-100, offset[1] - 10);
+            } else if (event.code === 'ArrowUp') {
+                offset[1] = Math.min(fullSize[1], offset[1] + 10);
+            }
+        })
+
+        const getCanvasCoords = () => {
+            const coords = canvas.getBoundingClientRect();
+            return {
+                x: coords.x,
+                y: coords.y
+            };
+        }
+
+        const getHScrollCoords = () => {
+            const x = offset[0] / fullSize[0]
+            const y = viewSize[1] - 10
+
+            const x2 = (offset[0] + viewSize[0]) / fullSize[0] * viewSize[1];
+            const y2 = viewSize[1];
+
+            return {
+                x,
+                y,
+                x2,
+                y2,
+                width: x2 - x,
+                height: y2 - y
+            }
+        }
+
+        const HScrollCollision = (x: number, y: number) => {
+            const HCoords = getHScrollCoords();
+            return x > HCoords.x && y > HCoords.y && x < HCoords.x2 && y < HCoords.y2;
+        }
+
+        const getHScrollCollisionPos = (x: number, y: number) => {
+            const HCoords = getHScrollCoords();
+
+            return {
+                x: x - HCoords.x,
+                y: y - HCoords.y,
+                collision: x > HCoords.x && y > HCoords.y && x < HCoords.x2 && y < HCoords.y2
+            }
+        }
+
+        let canvasCoords = getCanvasCoords();
+
+        window.addEventListener('resize', () => {
+            console.log('resize');
+            canvasCoords = getCanvasCoords();
+        })
+
+        let HScrollClickPos: { x: number, y: number } | undefined;
+        let originalOffset: { x: number, y: number }
+
+        canvas.addEventListener('mousedown', event => {
+            const coords = {
+                x: event.clientX - canvasCoords.x,
+                y: event.clientY - canvasCoords.y
+            };
+
+            const collisionCoords = getHScrollCollisionPos(coords.x, coords.y);
+
+            if (collisionCoords.collision) {
+                console.log('collision')
+                // HScrollClickPos = {
+                //     x: collisionCoords.x,
+                //     y: collisionCoords.y
+                // }
+                HScrollClickPos = coords;
+                originalOffset = {
+                    x: offset[0],
+                    y: offset[1]
+                };
+            } else {
+                HScrollClickPos = undefined;
+            }
+
+            console.log('mouse down', coords.x, coords.y, HScrollClickPos)
+        })
+
+        canvas.addEventListener('mousemove', event => {
+            if (HScrollClickPos === undefined) {
+                return;
+            }
+
+            const coords = {
+                x: event.clientX - canvasCoords.x,
+                y: event.clientY - canvasCoords.y
+            };
+
+            const newOffset = {
+                x: HScrollClickPos.x - coords.x,
+                y: HScrollClickPos.y - coords.y
+            }
+
+            offset[0] = originalOffset.x - newOffset.x * fullSize[0] / viewSize[0];
+
+            console.log('mouse move', coords.x, coords.y)
+        })
+
+        const render = () => {
+            // const fullSize = [
+            //     canvas.clientWidth,
+            //     canvas.clientHeight
+            // ]
+
+            // const fullSize = [1000, 1000]
+
+            viewSize = [
+                canvas.clientWidth,
+                canvas.clientHeight
+            ];
+
+            canvas.width = viewSize[0];
+            canvas.height = viewSize[1];
+
+            // console.log(viewSize)
+
+            // createTextureCoords
             // const resolution = [canvas.width, canvas.height];
             // const resolution = [canvas.clientWidth, canvas.clientHeight];
-            const resolution = fullSize;
+            // const resolution = fullSize;
 
             // const resolution = [
             //     l * COLS,
             //     l * ROWS
             // ]
 
-            const viewSize = [canvas.clientWidth, canvas.clientHeight];
+            // canvas.width = resolution[0];
+            // canvas.height = resolution[1];
 
-            canvas.width = resolution[0];
-            canvas.height = resolution[1];
+            // canvas.width = fullSize[0];
+            // canvas.height = fullSize[1];
 
             // const offset = [
             //     canvasContainer.scrollLeft,
             //     canvasContainer.scrollTop,
             // ];
 
-            const offset = [0, 0];
+            // const offset = [0, 0];
 
             // console.log('l', resolution[0] / COLS);
 
             gl.viewport(0, 0, viewSize[0], viewSize[1]);
-            // console.log(resolution)
-            setVec2FUniform(gl, program, "resolution", resolution);
-            setVec2FUniform(gl, program, "offset", offset);
-            setVec2FUniform(gl, program, "size", [COLS, ROWS]);
 
-            setFUniform(gl, program, "l", resolution[0] / COLS);
+            // console.log(fullSize, viewSize, offset)
+            // console.log(resolution)
+            // setVec2FUniform(gl, program, "resolution", resolution)
+
+            setVec2FUniform(gl, program, "fullSize", fullSize);
+            setVec2FUniform(gl, program, "viewSize", viewSize);
+
+            setVec2FUniform(gl, program, "offset", offset);
+            setVec2FUniform(gl, program, "matrixSize", [COLS, ROWS]);
+
+            setFUniform(gl, program, "l", fullSize[0] / COLS);
             gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);
-            // gl.drawArrays(gl.TRIANGLES, 0, 6);
 
             requestAnimationFrame(render);
         }

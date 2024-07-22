@@ -1,21 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MineSweeper</title>
 
-    <link rel="stylesheet" href="src/index.css"/>
+    <link rel="stylesheet" href="src/index.css" />
 
     <script src="build/index.js" defer></script>
 </head>
+
 <body>
     <div class="main">
         <div class="canvas-container">
             <canvas id="canvas"></canvas>
         </div>
     </div>
-    
+
     <script id="vertex-shader" type="x-shader/x-vertex">
         #version 100
         precision mediump float;
@@ -23,21 +25,36 @@
         attribute vec2 aPosition;
         attribute vec2 aTextureCoord;
         
-        uniform vec2 resolution;
+        uniform vec2 fullSize;
+        uniform vec2 viewSize;
+
         uniform vec2 offset;
         uniform float l;
-        uniform vec2 size;
+        uniform vec2 matrixSize;
 
         varying vec2 pos;
+
+        varying vec2 globalCoords;
+
         varying highp vec2 vTextureCoord;
 
         void main()
         {
             //float size = resolution.x / l;
 
-            pos = aPosition * size;
+            pos = aPosition / fullSize * matrixSize;
 
-            gl_Position = vec4(aPosition * 2. - 1., 0.0, 1.0);
+            // vec2 local = aPosition - offset;
+
+            globalCoords = aPosition;
+
+            vec2 local = aPosition - offset;
+
+            vec2 shader = local / viewSize * 2. - 1.;
+
+            gl_Position = vec4(shader, 0.0, 1.0);
+
+            //gl_Position = vec4(aPosition, 0., 1.);
 
             vTextureCoord = aTextureCoord;
         }
@@ -47,23 +64,26 @@
         #version 100
         precision mediump float;
 
-        uniform vec2 resolution;
+        uniform vec2 fullSize;
+        uniform vec2 viewSize;
+
         uniform vec2 offset;
         uniform float l;
-        uniform vec2 size;
+        uniform vec2 matrixSize;
 
         uniform sampler2D uSampler;
 
         varying vec2 pos;
+        varying vec2 globalCoords;
         varying highp vec2 vTextureCoord;
 
         void main()
         {   
-            vec2 st = (gl_FragCoord.xy) / resolution;
+            vec2 st = (gl_FragCoord.xy) / fullSize;
 
-            vec2 p = fract(pos) * resolution / size.x;
+            vec2 p = fract(pos) * fullSize / matrixSize;
 
-            vec2 maxP = resolution / size;
+            vec2 maxP = fullSize / matrixSize;
 
             float stroke = 2.;
 
@@ -80,10 +100,37 @@
             
             //gl_FragColor = vec4(vec3(fract(pos.x)), 1.0);
 
-            //gl_FragColor = vec4(0., 0., 1., 1.);
+            // gl_FragColor = vec4(1.0, 1.0, 0., 0.);
+
+            vec2 localPart = gl_FragCoord.xy / viewSize.xy;
+
+            vec2 offsetPart = offset / fullSize;
+            vec2 combPart = (offset + viewSize) / fullSize;
+
+            if (gl_FragCoord.y < 10. && localPart.x > offsetPart.x && localPart.x < combPart.x ||
+                gl_FragCoord.x > viewSize.x - 10. && localPart.y > offsetPart.y && localPart.y < combPart.y)
+            {
+               gl_FragColor = vec4(vec3(0., 1., 0.), 1.);
+            } else {
+                //gl_FragColor = vec4(globalCoords.x / viewSize.x, 0., 0., 1.);
+
+                //gl_FragColor = texture2D(uSampler, vTextureCoord);
+
+                if (p.x < stroke ||
+                    p.x > maxP.x - stroke || 
+                    p.y < stroke || 
+                    p.y > maxP.y - stroke) {
+                    gl_FragColor = vec4(vec3(0.), 1.);
+                } else {
+                    gl_FragColor = texture2D(uSampler, vTextureCoord);
+                }
+            }
+
+            //gl_FragColor = vec4(0., 0., 0., 1.);
 
             //gl_FragColor = vec4(st.x + offset.x / resolution.x, 0., 0., 1.);
         }
     </script>
 </body>
+
 </html>

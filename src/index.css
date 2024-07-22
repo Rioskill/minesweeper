@@ -7,7 +7,8 @@
     border: none;
 }
 
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
 }
@@ -28,22 +29,20 @@ html, body {
     /* width: 100vw; */
     /* height: 100vh; */
 
-    /* width: 30vw;
-    height: 30vh; */
+    width: 30vw;
+    height: 30vh;
 
-    width: 60vw;
-    height: 60vh;
+    /* width: 60vw;
+    height: 60vh; */
 
-    overflow: scroll;
+    /* overflow: scroll; */
+    overflow: hidden;
 
     justify-content: center;
     align-items: center;
 }
 
 canvas {
-    /* width: 60vw;
-    height: 60vh; */
-
     width: 100%;
     height: 100%;
 
