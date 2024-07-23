@@ -1,5 +1,7 @@
 import { GLBuffer } from "./buffer";
+import { makeCoords } from "./models";
 import { loadTexture } from "./texture";
+import { MinesweeperView } from "./window";
 
 const ROWS = 20;
 const COLS = 20;
@@ -238,27 +240,7 @@ window.addEventListener(
 
         const dataArray = createVertexGrid();
 
-        // console.log(dataArray)
-
         vBuf.setData(new Float32Array(dataArray));
-
-        // vBuf.setData(new Float32Array([
-        //     0, 0,
-        //     0, 500,
-        //     500, 0,
-        //     0, 500,
-        //     500, 0,
-        //     500, 500
-        // ]))
-
-        // vBuf.setData(new Float32Array([
-        //     -1, -1,
-        //     -1, 1,
-        //     1, -1,
-        //     -1, 1,
-        //     1, -1,
-        //     1, 1,
-        // ]));
 
         const textureBuffer = new GLBuffer({
             gl: gl,
@@ -292,84 +274,43 @@ window.addEventListener(
 
         const canvasContainer = document.querySelector(".canvas-container")!;
 
-        const l = 50;
-
-        // const originalL = fullSize[0] / COLS;
-        // const originalWidth = window.innerWidth;
-
-        const fullSize = [
-            COLL * COLS,
-            ROWL * ROWS
-        ]
-
-        const offset = [0, 0];
-
-        let viewSize = [
-            canvas.clientWidth,
-            canvas.clientHeight
-        ];
+        const mainView = new MinesweeperView({
+            fullSize: {
+                x: COLL * COLS,
+                y: ROWL * ROWS
+            },
+            viewSize: {
+                x: canvas.clientWidth,
+                y: canvas.clientHeight
+            },
+            canvas: canvas
+        })
 
         document.addEventListener('keydown', event => {
-            // console.log('press', event.code)
+
+            console.log(mainView.fullSize, mainView.offset);
+
             if (event.code === 'ArrowLeft') {
-                offset[0] = Math.max(-100, offset[0] - 10);
+                mainView.updateOffset(makeCoords(-10, 0));
             } else if (event.code === 'ArrowRight') {
-                offset[0] = Math.min(fullSize[0], offset[0] + 10);
+                mainView.updateOffset(makeCoords(10, 0));
             } else if (event.code === 'ArrowDown') {
-                offset[1] = Math.max(-100, offset[1] - 10);
+                mainView.updateOffset(makeCoords(0, -10));
             } else if (event.code === 'ArrowUp') {
-                offset[1] = Math.min(fullSize[1], offset[1] + 10);
+                mainView.updateOffset(makeCoords(0, 10));
             }
         })
 
-        const getCanvasCoords = () => {
-            const coords = canvas.getBoundingClientRect();
-            return {
-                x: coords.x,
-                y: coords.y
-            };
-        }
-
-        const getHScrollCoords = () => {
-            const x = offset[0] / fullSize[0]
-            const y = viewSize[1] - 10
-
-            const x2 = (offset[0] + viewSize[0]) / fullSize[0] * viewSize[1];
-            const y2 = viewSize[1];
-
-            return {
-                x,
-                y,
-                x2,
-                y2,
-                width: x2 - x,
-                height: y2 - y
-            }
-        }
-
-        const HScrollCollision = (x: number, y: number) => {
-            const HCoords = getHScrollCoords();
-            return x > HCoords.x && y > HCoords.y && x < HCoords.x2 && y < HCoords.y2;
-        }
-
-        const getHScrollCollisionPos = (x: number, y: number) => {
-            const HCoords = getHScrollCoords();
-
-            return {
-                x: x - HCoords.x,
-                y: y - HCoords.y,
-                collision: x > HCoords.x && y > HCoords.y && x < HCoords.x2 && y < HCoords.y2
-            }
-        }
-
-        let canvasCoords = getCanvasCoords();
+        let canvasCoords = mainView.canvasCoords;
 
         window.addEventListener('resize', () => {
             console.log('resize');
-            canvasCoords = getCanvasCoords();
+            canvasCoords = mainView.canvasCoords;
         })
 
-        let HScrollClickPos: { x: number, y: number } | undefined;
+        let HScrollClickPos: { x: number, y: number } | undefined = undefined;
+        let VScrollClickPos: { x: number, y: number } | undefined = undefined;
+
         let originalOffset: { x: number, y: number }
 
         canvas.addEventListener('mousedown', event => {
@@ -378,28 +319,40 @@ window.addEventListener(
                 y: event.clientY - canvasCoords.y
             };
 
-            const collisionCoords = getHScrollCollisionPos(coords.x, coords.y);
+            // const HCollisionCoords = getHScrollCollisionPos(coords.x, coords.y);
+            // const VCollisionCoords = getVScrollCollisionPos(coords.x, coords.y);
 
-            if (collisionCoords.collision) {
-                console.log('collision')
-                // HScrollClickPos = {
-                //     x: collisionCoords.x,
-                //     y: collisionCoords.y
-                // }
+            const HCollisionCoords = mainView.getHCollisionPos(coords);
+            const VCollisionCoords = mainView.getVCollisionPos(coords);
+
+            if (HCollisionCoords.collision) {
+                console.log('H collision')
                 HScrollClickPos = coords;
                 originalOffset = {
-                    x: offset[0],
-                    y: offset[1]
+                    x: mainView.offset.x,
+                    y: mainView.offset.y
                 };
             } else {
                 HScrollClickPos = undefined;
             }
 
-            console.log('mouse down', coords.x, coords.y, HScrollClickPos)
+            if (VCollisionCoords.collision) {
+                console.log('V collision');
+                VScrollClickPos = coords;
+                originalOffset = {
+                    x: mainView.offset.x,
+                    y: mainView.offset.y
+                }
+            } else {
+                VScrollClickPos = undefined;
+            }
+
+            // console.log(coords.x, coords.y, 'vscrollpos:', getVScrollCoords())
+            // console.log('mouse down', coords.x, coords.y, HScrollClickPos)
         })
 
         canvas.addEventListener('mousemove', event => {
-            if (HScrollClickPos === undefined) {
+            if (HScrollClickPos === undefined && VScrollClickPos === undefined) {
                 return;
             }
 
@@ -408,72 +361,51 @@ window.addEventListener(
                 y: event.clientY - canvasCoords.y
             };
 
-            const newOffset = {
-                x: HScrollClickPos.x - coords.x,
-                y: HScrollClickPos.y - coords.y
+            if (HScrollClickPos) {
+                const newOffset = {
+                    x: HScrollClickPos.x - coords.x,
+                    y: HScrollClickPos.y - coords.y
+                }
+
+                // mainView.offset.x = originalOffset.x - newOffset.x * mainView.fullSize.x / mainView.viewSize.x;
+                mainView.setOffsetX(originalOffset.x - newOffset.x * mainView.fullSize.x / mainView.viewSize.x)
+            } else if (VScrollClickPos) {
+                const newOffset = {
+                    x: VScrollClickPos.x - coords.x,
+                    y: VScrollClickPos.y - coords.y
+                }
+
+                // mainView.offset.y = originalOffset.y + newOffset.y * mainView.fullSize.y / mainView.viewSize.y;
+                mainView.setOffsetY(originalOffset.y + newOffset.y * mainView.fullSize.y / mainView.viewSize.y);
             }
 
-            offset[0] = originalOffset.x - newOffset.x * fullSize[0] / viewSize[0];
 
-            console.log('mouse move', coords.x, coords.y)
+            // console.log('mouse move', coords.x, coords.y)
+        })
+
+        window.addEventListener('mouseup', event => {
+            // console.log('mouse up')
+            HScrollClickPos = undefined;
+            VScrollClickPos = undefined;
         })
 
         const render = () => {
-            // const fullSize = [
-            //     canvas.clientWidth,
-            //     canvas.clientHeight
-            // ]
+            mainView.viewSize = {
+                x: canvas.clientWidth,
+                y: canvas.clientHeight
+            };
 
-            // const fullSize = [1000, 1000]
+            canvas.width = mainView.viewSize.x;
+            canvas.height = mainView.viewSize.y;
+            gl.viewport(0, 0, mainView.viewSize.x, mainView.viewSize.y);
 
-            viewSize = [
-                canvas.clientWidth,
-                canvas.clientHeight
-            ];
+            setVec2FUniform(gl, program, "fullSize", [mainView.fullSize.x, mainView.fullSize.y]);
+            setVec2FUniform(gl, program, "viewSize", [mainView.viewSize.x, mainView.viewSize.y]);
 
-            canvas.width = viewSize[0];
-            canvas.height = viewSize[1];
-
-            // console.log(viewSize)
-
-            // createTextureCoords
-            // const resolution = [canvas.width, canvas.height];
-            // const resolution = [canvas.clientWidth, canvas.clientHeight];
-            // const resolution = fullSize;
-
-            // const resolution = [
-            //     l * COLS,
-            //     l * ROWS
-            // ]
-
-            // canvas.width = resolution[0];
-            // canvas.height = resolution[1];
-
-            // canvas.width = fullSize[0];
-            // canvas.height = fullSize[1];
-
-            // const offset = [
-            //     canvasContainer.scrollLeft,
-            //     canvasContainer.scrollTop,
-            // ];
-
-            // const offset = [0, 0];
-
-            // console.log('l', resolution[0] / COLS);
-
-            gl.viewport(0, 0, viewSize[0], viewSize[1]);
-
-            // console.log(fullSize, viewSize, offset)
-            // console.log(resolution)
-            // setVec2FUniform(gl, program, "resolution", resolution)
-
-            setVec2FUniform(gl, program, "fullSize", fullSize);
-            setVec2FUniform(gl, program, "viewSize", viewSize);
-
-            setVec2FUniform(gl, program, "offset", offset);
+            setVec2FUniform(gl, program, "offset", [mainView.offset.x, mainView.offset.y]);
             setVec2FUniform(gl, program, "matrixSize", [COLS, ROWS]);
 
-            setFUniform(gl, program, "l", fullSize[0] / COLS);
+            setFUniform(gl, program, "l", mainView.fullSize[0] / COLS);
             gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);
 
             requestAnimationFrame(render);
