@@ -1,17 +1,21 @@
 import { GLBuffer } from "./buffer";
-import { makeCoords } from "./models";
+import { CoordsT, makeCoords } from "./models";
 import { loadTexture } from "./texture";
+import { addVectors } from "./utils";
 import { MinesweeperView } from "./window";
 
 const ROWS = 20;
 const COLS = 20;
 
-const MINES = 30;
+const MINES = 100;
 
 const BOMB_VALUE = 10;
 
 const ROWL = 50;
 const COLL = 50;
+
+const CHUNKW = 8;
+const CHUNKH = 8;
 
 const range = (n: number, m?: number): number[] => {
     if (m === undefined) {
@@ -201,9 +205,38 @@ window.addEventListener(
 
                 for (let j = 0; j < COLS; j++) {
                     const x = j * width;
+                    grid.push(
+                        ...mask.flatMap(([a, b]) => [x + a * width, y + b * height])
+                    );
+                }
+            }
 
-                    // console.log(mask.map(([a, b]) => [x + a * width, y + b * height]))
+            return grid;
+        }
 
+        const createVertexGridChunk = (chunk: CoordsT) => {
+            const grid: number[] = [];
+
+            // const width = 1 / COLS;
+            // const height = 1 / ROWS;
+
+            const width = COLL;
+            const height = ROWL;
+
+            const mask = [
+                [0, 0],
+                [0, 1],
+                [1, 0],
+                [0, 1],
+                [1, 0],
+                [1, 1],
+            ]
+
+            for (let i = chunk.y * CHUNKH; i < (chunk.y + 1) * CHUNKH; i++) {
+                const y = i * height;
+
+                for (let j = chunk.x * CHUNKW; j < (chunk.x + 1) * CHUNKW; j++) {
+                    const x = j * width;
                     grid.push(
                         ...mask.flatMap(([a, b]) => [x + a * width, y + b * height])
                     );
@@ -238,9 +271,52 @@ window.addEventListener(
             return coords;
         }
 
-        const dataArray = createVertexGrid();
+        const createTextureCoordsChunk = (map: number[][], chunk: CoordsT) => {
+            const coords: number[] = [];
 
-        vBuf.setData(new Float32Array(dataArray));
+            const mask = [
+                [0, 0],
+                [0, 1],
+                [1, 0],
+                [0, 1],
+                [1, 0],
+                [1, 1]
+            ]
+
+            const width = 1 / 11;
+
+            for (let i = chunk.y * CHUNKH; i < (chunk.y + 1) * CHUNKH; i++) {
+                for (let j = chunk.x * CHUNKW; j < (chunk.x + 1) * CHUNKW; j++) {
+                    coords.push(
+                        ...mask.flatMap(([a, b]) => [(map[i][j] + a) * width, b])
+                    )
+                }
+            }
+
+            return coords;
+        }
+
+        let dataArray: number[] = [];
+
+        const loadChunk = (chunk: CoordsT) => {
+            dataArray = createVertexGridChunk(chunk);
+            const textureCoords = createTextureCoordsChunk(map, chunk);
+
+            vBuf.setData(new Float32Array(dataArray));
+            textureBuffer.setData(new Float32Array(textureCoords));
+        }
+
+        const loadChunks = (chunks: CoordsT[]) => {
+            dataArray = chunks.flatMap(createVertexGridChunk);
+            const textureCoords = chunks.flatMap(chunk => createTextureCoordsChunk(map, chunk));
+
+            vBuf.setData(new Float32Array(dataArray));
+            textureBuffer.setData(new Float32Array(textureCoords));
+        }
+
+        // const dataArray = createVertexGrid();
+        // const dataArray = createVertexGridChunk(makeCoords(0, 0));
+        // vBuf.setData(new Float32Array(dataArray));
 
         const textureBuffer = new GLBuffer({
             gl: gl,
@@ -252,13 +328,16 @@ window.addEventListener(
 
         const map = generateMatrix(ROWS, COLS, MINES);
 
-        console.log(map);
+        console.log('map', map);
 
-        const textureCoords = createTextureCoords(map);
+        // const textureCoords = createTextureCoords(map);
+        // const textureCoords = createTextureCoordsChunk(map, makeCoords(0, 0));
 
-        console.log(textureCoords)
+        // console.log(textureCoords)
 
-        textureBuffer.setData(new Float32Array(textureCoords));
+        // textureBuffer.setData(new Float32Array(textureCoords));
+
+        loadChunk(makeCoords(0, 0));
 
         gl.useProgram(program);
 
@@ -285,6 +364,35 @@ window.addEventListener(
             },
             canvas: canvas
         })
+
+        let currentChunk: CoordsT = makeCoords(0, 0);
+
+        const getChunk = (coords: CoordsT) => {
+            return {
+                x: Math.floor(coords.x / COLL / CHUNKW),
+                y: Math.floor(coords.y / ROWL / CHUNKH)
+            }
+        }
+
+        mainView.onOffsetUpdate = () => {
+            const chunkDeltas = [
+                makeCoords(0, 0),
+                makeCoords(0, 1),
+                makeCoords(1, 0),
+                makeCoords(1, 1)
+            ]
+
+            const chunk = getChunk(mainView.offset);
+
+            if (chunk !== currentChunk) {
+                currentChunk = chunk;
+
+                console.log(currentChunk)
+
+                // loadChunk(chunk);
+                loadChunks(chunkDeltas.map(delta => addVectors(chunk, delta)))
+            }
+        }
 
         document.addEventListener('keydown', event => {
 
@@ -351,7 +459,7 @@ window.addEventListener(
             // console.log('mouse down', coords.x, coords.y, HScrollClickPos)
         })
 
-        canvas.addEventListener('mousemove', event => {
+        window.addEventListener('mousemove', event => {
             if (HScrollClickPos === undefined && VScrollClickPos === undefined) {
                 return;
             }
@@ -367,7 +475,6 @@ window.addEventListener(
                     y: HScrollClickPos.y - coords.y
                 }
 
-                // mainView.offset.x = originalOffset.x - newOffset.x * mainView.fullSize.x / mainView.viewSize.x;
                 mainView.setOffsetX(originalOffset.x - newOffset.x * mainView.fullSize.x / mainView.viewSize.x)
             } else if (VScrollClickPos) {
                 const newOffset = {
@@ -375,7 +482,6 @@ window.addEventListener(
                     y: VScrollClickPos.y - coords.y
                 }
 
-                // mainView.offset.y = originalOffset.y + newOffset.y * mainView.fullSize.y / mainView.viewSize.y;
                 mainView.setOffsetY(originalOffset.y + newOffset.y * mainView.fullSize.y / mainView.viewSize.y);
             }
 
@@ -384,9 +490,12 @@ window.addEventListener(
         })
 
         window.addEventListener('mouseup', event => {
-            // console.log('mouse up')
             HScrollClickPos = undefined;
             VScrollClickPos = undefined;
+        })
+
+        canvas.addEventListener('wheel', event => {
+            mainView.updateOffset(makeCoords(event.deltaX, -event.deltaY));
         })
 
         const render = () => {

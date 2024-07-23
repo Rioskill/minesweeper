@@ -7,6 +7,8 @@ interface MinesweeperViewProps {
     offset?: CoordsT
 
     canvas: HTMLCanvasElement
+
+    onOffsetUpdate?: () => void;
 }
 
 export const getCollisionPos = (pos: CoordsT, rect: RectT) => {
@@ -22,7 +24,9 @@ export class MinesweeperView {
     viewSize: CoordsT;
     offset: CoordsT;
 
-    canvas: HTMLCanvasElement
+    canvas: HTMLCanvasElement;
+
+    onOffsetUpdate?: () => void;
 
     constructor(props: MinesweeperViewProps) {
         this.fullSize = props.fullSize;
@@ -95,6 +99,10 @@ export class MinesweeperView {
         const maxCoords = substractVectors(this.fullSize, this.viewSize);
 
         this.offset = clampCoords(minCoords, update, maxCoords);
+
+        if (this.onOffsetUpdate !== undefined) {
+            this.onOffsetUpdate();
+        }
     }
 
     updateOffset(update: CoordsT) {
