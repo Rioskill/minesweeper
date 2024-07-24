@@ -88,10 +88,18 @@ export class MinesweeperView {
 
     setOffsetX(x: number) {
         this.offset.x = clamp(0, x, this.fullSize.x - this.viewSize.x);
+
+        if (this.onOffsetUpdate !== undefined) {
+            this.onOffsetUpdate();
+        }
     }
 
     setOffsetY(y: number) {
         this.offset.y = clamp(0, y, this.fullSize.y - this.viewSize.y);
+
+        if (this.onOffsetUpdate !== undefined) {
+            this.onOffsetUpdate();
+        }
     }
 
     setOffset(update: CoordsT) {

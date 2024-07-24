@@ -4,18 +4,26 @@ import { loadTexture } from "./texture";
 import { addVectors } from "./utils";
 import { MinesweeperView } from "./window";
 
-const ROWS = 20;
-const COLS = 20;
+// const ROWS = 10000;
+// const COLS = 10000;
 
-const MINES = 100;
+
+const ROWS = 1000;
+const COLS = 1000;
+
+// const MINES = 10000000;
+
+const MINES = 50000;
+
+// const MINES = 10;
 
 const BOMB_VALUE = 10;
 
 const ROWL = 50;
 const COLL = 50;
 
-const CHUNKW = 8;
-const CHUNKH = 8;
+const CHUNKW = 30;
+const CHUNKH = 30;
 
 const range = (n: number, m?: number): number[] => {
     if (m === undefined) {
@@ -232,10 +240,10 @@ window.addEventListener(
                 [1, 1],
             ]
 
-            for (let i = chunk.y * CHUNKH; i < (chunk.y + 1) * CHUNKH; i++) {
+            for (let i = chunk.y * CHUNKH; i < Math.min((chunk.y + 1) * CHUNKH, ROWS); i++) {
                 const y = i * height;
 
-                for (let j = chunk.x * CHUNKW; j < (chunk.x + 1) * CHUNKW; j++) {
+                for (let j = chunk.x * CHUNKW; j < Math.min((chunk.x + 1) * CHUNKW, COLS); j++) {
                     const x = j * width;
                     grid.push(
                         ...mask.flatMap(([a, b]) => [x + a * width, y + b * height])
@@ -285,8 +293,8 @@ window.addEventListener(
 
             const width = 1 / 11;
 
-            for (let i = chunk.y * CHUNKH; i < (chunk.y + 1) * CHUNKH; i++) {
-                for (let j = chunk.x * CHUNKW; j < (chunk.x + 1) * CHUNKW; j++) {
+            for (let i = chunk.y * CHUNKH; i < Math.min((chunk.y + 1) * CHUNKH, ROWS); i++) {
+                for (let j = chunk.x * CHUNKW; j < Math.min((chunk.x + 1) * CHUNKW, COLS); j++) {
                     coords.push(
                         ...mask.flatMap(([a, b]) => [(map[i][j] + a) * width, b])
                     )
@@ -307,6 +315,7 @@ window.addEventListener(
         }
 
         const loadChunks = (chunks: CoordsT[]) => {
+            console.log('load chunks', chunks)
             dataArray = chunks.flatMap(createVertexGridChunk);
             const textureCoords = chunks.flatMap(chunk => createTextureCoordsChunk(map, chunk));
 
