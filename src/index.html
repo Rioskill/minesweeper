@@ -77,6 +77,14 @@
         varying vec2 globalCoords;
         varying highp vec2 vTextureCoord;
 
+        vec2 getCoord(vec2 orig) {
+            if (orig.x >= 1.) {
+                return vec2(0., 0.);
+            }
+
+            return orig;
+        }
+
         void main()
         {   
             vec2 st = (gl_FragCoord.xy) / fullSize;
@@ -122,7 +130,10 @@
                     p.y > maxP.y - stroke) {
                     gl_FragColor = vec4(vec3(0.), 1.);
                 } else {
-                    gl_FragColor = texture2D(uSampler, vTextureCoord);
+                    vec2 crd = getCoord(vTextureCoord);
+
+                    //gl_FragColor = texture2D(uSampler, vTextureCoord);
+                    gl_FragColor = texture2D(uSampler, crd);
                 }
             }
 

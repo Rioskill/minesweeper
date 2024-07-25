@@ -7,13 +7,21 @@ import { MinesweeperView } from "./window";
 // const ROWS = 10000;
 // const COLS = 10000;
 
+const ROWS = 2000;
+const COLS = 2000;
 
-const ROWS = 1000;
-const COLS = 1000;
+
+// const ROWS = 1000;
+// const COLS = 1000;
+
+// const ROWS = 50;
+// const COLS = 50;
 
 // const MINES = 10000000;
 
-const MINES = 50000;
+const MINES = 400000;
+
+// const MINES = 50;
 
 // const MINES = 10;
 
@@ -88,7 +96,7 @@ function generateMatrix(rows: number, cols: number, mines: number) {
         return bombCnt;
     }
 
-    return matrix.map((row, i) => row.map((_, j) => calcValue(i, j)));
+    return matrix.map((row, i) => row.map((_, j) => calcValue(i, j) + 100));
 }
 
 window.addEventListener(
@@ -315,17 +323,13 @@ window.addEventListener(
         }
 
         const loadChunks = (chunks: CoordsT[]) => {
-            console.log('load chunks', chunks)
+            // console.log('load chunks', chunks)
             dataArray = chunks.flatMap(createVertexGridChunk);
             const textureCoords = chunks.flatMap(chunk => createTextureCoordsChunk(map, chunk));
 
             vBuf.setData(new Float32Array(dataArray));
             textureBuffer.setData(new Float32Array(textureCoords));
         }
-
-        // const dataArray = createVertexGrid();
-        // const dataArray = createVertexGridChunk(makeCoords(0, 0));
-        // vBuf.setData(new Float32Array(dataArray));
 
         const textureBuffer = new GLBuffer({
             gl: gl,
@@ -338,15 +342,6 @@ window.addEventListener(
         const map = generateMatrix(ROWS, COLS, MINES);
 
         console.log('map', map);
-
-        // const textureCoords = createTextureCoords(map);
-        // const textureCoords = createTextureCoordsChunk(map, makeCoords(0, 0));
-
-        // console.log(textureCoords)
-
-        // textureBuffer.setData(new Float32Array(textureCoords));
-
-        loadChunk(makeCoords(0, 0));
 
         gl.useProgram(program);
 
@@ -383,7 +378,7 @@ window.addEventListener(
             }
         }
 
-        mainView.onOffsetUpdate = () => {
+        const loadVisibleChunks = () => {
             const chunkDeltas = [
                 makeCoords(0, 0),
                 makeCoords(0, 1),
@@ -396,16 +391,20 @@ window.addEventListener(
             if (chunk !== currentChunk) {
                 currentChunk = chunk;
 
-                console.log(currentChunk)
+                // console.log(currentChunk)
 
                 // loadChunk(chunk);
                 loadChunks(chunkDeltas.map(delta => addVectors(chunk, delta)))
             }
         }
 
+        loadVisibleChunks();
+
+        mainView.onOffsetUpdate = loadVisibleChunks;
+
         document.addEventListener('keydown', event => {
 
-            console.log(mainView.fullSize, mainView.offset);
+            // console.log(mainView.fullSize, mainView.offset);
 
             if (event.code === 'ArrowLeft') {
                 mainView.updateOffset(makeCoords(-10, 0));
@@ -420,6 +419,13 @@ window.addEventListener(
 
         let canvasCoords = mainView.canvasCoords;
 
+        const getTileFromMouseCoords = (coords: CoordsT) => {
+            return {
+                x: Math.floor((coords.x + mainView.offset.x) / COLL),
+                y: Math.floor((mainView.viewSize.y - coords.y + mainView.offset.y) / ROWL)
+            }
+        }
+
         window.addEventListener('resize', () => {
             console.log('resize');
             canvasCoords = mainView.canvasCoords;
@@ -430,14 +436,81 @@ window.addEventListener(
 
         let originalOffset: { x: number, y: number }
 
+        const getMapVal = (coords: CoordsT) => {
+            return map[coords.y][coords.x];
+        }
+
+        const coordsInBounds = (coords: CoordsT) => {
+            return coords.x >= 0 &&
+                   coords.y >= 0 &&
+                   coords.x < COLS &&
+                   coords.y < ROWS;
+        }
+
+        const openTile = (tileCoords: CoordsT) => {
+            const val = getMapVal(tileCoords);
+
+            if (val > 100) {
+                map[tileCoords.y][tileCoords.x] -= 100;
+                loadVisibleChunks();
+            } else if (val === 100) {
+                const q: CoordsT[] = [];
+
+                q.push(tileCoords);
+
+                const coordsDeltas = [
+                    makeCoords(-1, 0),
+                    makeCoords(0, -1),
+                    makeCoords(1, 0),
+                    makeCoords(0, 1)
+                ]
+
+                const processTile = (tileCoords: CoordsT) => {
+                    map[tileCoords.y][tileCoords.x] -= 100;
+                    
+                    if (map[tileCoords.y][tileCoords.x] > 0) {
+                        return;
+                    }
+
+                    const coords = coordsDeltas.map(delta => addVectors(tileCoords, delta));
+
+                    coords.forEach(coord => {
+                        if (coordsInBounds(coord)) {
+                            const val = getMapVal(coord);
+                            if (val >= 100 && val !== 110) {
+                                q.push(coord);
+                            }
+                        }
+                    })
+                }
+
+                const processTilesFromQueue = (queue: CoordsT[], num: number) => {
+                    for (let i = 0; i < num && queue.length > 0; i++) {
+                        const curr = q.shift();
+
+                        if (curr === undefined || map[curr.y][curr.x] < 100) {
+                            continue;
+                        }
+
+                        processTile(curr);
+                    }
+
+                    if (queue.length > 0) {
+                        this.setTimeout(()=>processTilesFromQueue(queue, num), 0);
+                    }
+
+                    loadVisibleChunks();
+                }
+
+                processTilesFromQueue(q, 1000);
+            }
+        }
+
         canvas.addEventListener('mousedown', event => {
             const coords = {
                 x: event.clientX - canvasCoords.x,
                 y: event.clientY - canvasCoords.y
             };
-
-            // const HCollisionCoords = getHScrollCollisionPos(coords.x, coords.y);
-            // const VCollisionCoords = getVScrollCollisionPos(coords.x, coords.y);
 
             const HCollisionCoords = mainView.getHCollisionPos(coords);
             const VCollisionCoords = mainView.getVCollisionPos(coords);
@@ -464,8 +537,16 @@ window.addEventListener(
                 VScrollClickPos = undefined;
             }
 
-            // console.log(coords.x, coords.y, 'vscrollpos:', getVScrollCoords())
-            // console.log('mouse down', coords.x, coords.y, HScrollClickPos)
+            const tile = getTileFromMouseCoords(coords)
+
+            // console.log('click at', getCellFromMouseCoords(coords));
+
+            openTile(tile);
+
+            // if (map[tile.y][tile.x] > 100) {
+            //     map[tile.y][tile.x] -= 100;
+            //     loadVisibleChunks();
+            // }
         })
 
         window.addEventListener('mousemove', event => {
@@ -493,9 +574,6 @@ window.addEventListener(
 
                 mainView.setOffsetY(originalOffset.y + newOffset.y * mainView.fullSize.y / mainView.viewSize.y);
             }
-
-
-            // console.log('mouse move', coords.x, coords.y)
         })
 
         window.addEventListener('mouseup', event => {
