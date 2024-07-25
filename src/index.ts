@@ -25,6 +25,7 @@ const MINES = 400000;
 
 // const MINES = 10;
 
+const FLAG_VALUE = 9;
 const BOMB_VALUE = 10;
 
 const ROWL = 50;
@@ -357,6 +358,8 @@ window.addEventListener(
 
         const canvasContainer = document.querySelector(".canvas-container")!;
 
+        canvas.oncontextmenu = () => false;
+
         const mainView = new MinesweeperView({
             fullSize: {
                 x: COLL * COLS,
@@ -506,12 +509,7 @@ window.addEventListener(
             }
         }
 
-        canvas.addEventListener('mousedown', event => {
-            const coords = {
-                x: event.clientX - canvasCoords.x,
-                y: event.clientY - canvasCoords.y
-            };
-
+        const processLeftClick = (coords: CoordsT) => {
             const HCollisionCoords = mainView.getHCollisionPos(coords);
             const VCollisionCoords = mainView.getVCollisionPos(coords);
 
@@ -539,14 +537,28 @@ window.addEventListener(
 
             const tile = getTileFromMouseCoords(coords)
 
-            // console.log('click at', getCellFromMouseCoords(coords));
-
             openTile(tile);
+        }
 
-            // if (map[tile.y][tile.x] > 100) {
-            //     map[tile.y][tile.x] -= 100;
-            //     loadVisibleChunks();
-            // }
+        const processRightClick = (coords: CoordsT) => {
+            console.log('right click')
+            const tile = getTileFromMouseCoords(coords);
+            map[tile.y][tile.x] = FLAG_VALUE;
+            loadVisibleChunks();
+        }
+
+        canvas.addEventListener('mousedown', event => {
+            const coords = {
+                x: event.clientX - canvasCoords.x,
+                y: event.clientY - canvasCoords.y
+            };
+
+            if (event.button === 0) {
+                processLeftClick(coords);
+            } else if (event.button === 2) {
+                processRightClick(coords);
+            }
+
         })
 
         window.addEventListener('mousemove', event => {

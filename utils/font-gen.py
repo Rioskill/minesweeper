@@ -14,8 +14,12 @@ def gen_sprite():
         _, _, w, h = draw.textbbox((0, 0), symbol, font=font)
         draw.text((x + (WIDTH - w) / 2, 0), symbol, (0,0,0), font=font)
 
-    for i in range(1, 10):
+    for i in range(1, 9):
         draw_symbol(str(i), WIDTH * i)
+
+    flag = Image.open("textures/flag.png")
+    flag = flag.resize((WIDTH, WIDTH))
+    image.paste(flag, (WIDTH * 9, 0))
 
     bomb = Image.open("textures/bomb.png")
     bomb = bomb.resize((WIDTH, WIDTH))
