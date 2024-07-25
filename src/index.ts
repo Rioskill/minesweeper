@@ -28,6 +28,9 @@ const MINES = 400000;
 const FLAG_VALUE = 9;
 const BOMB_VALUE = 10;
 
+const FLAG_OVERFLOW = 50;
+const HIDDEN_OVERFLOW = 100;
+
 const ROWL = 50;
 const COLL = 50;
 
@@ -394,9 +397,6 @@ window.addEventListener(
             if (chunk !== currentChunk) {
                 currentChunk = chunk;
 
-                // console.log(currentChunk)
-
-                // loadChunk(chunk);
                 loadChunks(chunkDeltas.map(delta => addVectors(chunk, delta)))
             }
         }
@@ -443,6 +443,31 @@ window.addEventListener(
             return map[coords.y][coords.x];
         }
 
+
+        const isHidden = (val: number) => {
+            return val >= HIDDEN_OVERFLOW && val < FLAG_OVERFLOW + HIDDEN_OVERFLOW;
+        }
+
+        const isFlag = (val: number) => {
+            return val >= FLAG_OVERFLOW && val < HIDDEN_OVERFLOW || val >= FLAG_OVERFLOW + HIDDEN_OVERFLOW;
+        }
+
+        const isHiddenAt = (tile: CoordsT) => {
+            return isHidden(getMapVal(tile));
+        }
+
+        const isFlagAt = (tile: CoordsT) => {
+            return isFlag(getMapVal(tile));
+        }
+
+        const setFlagAt = (tile: CoordsT) => {
+            map[tile.y][tile.x] += FLAG_OVERFLOW;
+        }
+
+        const removeFlagAt = (tile: CoordsT) => {
+            map[tile.y][tile.x] -= FLAG_OVERFLOW;
+        }
+
         const coordsInBounds = (coords: CoordsT) => {
             return coords.x >= 0 &&
                    coords.y >= 0 &&
@@ -453,10 +478,10 @@ window.addEventListener(
         const openTile = (tileCoords: CoordsT) => {
             const val = getMapVal(tileCoords);
 
-            if (val > 100) {
-                map[tileCoords.y][tileCoords.x] -= 100;
+            if (isHidden(val) && val !== HIDDEN_OVERFLOW) {
+                map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
                 loadVisibleChunks();
-            } else if (val === 100) {
+            } else if (val === HIDDEN_OVERFLOW) {
                 const q: CoordsT[] = [];
 
                 q.push(tileCoords);
@@ -469,7 +494,7 @@ window.addEventListener(
                 ]
 
                 const processTile = (tileCoords: CoordsT) => {
-                    map[tileCoords.y][tileCoords.x] -= 100;
+                    map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
                     
                     if (map[tileCoords.y][tileCoords.x] > 0) {
                         return;
@@ -480,7 +505,7 @@ window.addEventListener(
                     coords.forEach(coord => {
                         if (coordsInBounds(coord)) {
                             const val = getMapVal(coord);
-                            if (val >= 100 && val !== 110) {
+                            if (val >= HIDDEN_OVERFLOW && val !== HIDDEN_OVERFLOW + BOMB_VALUE) {
                                 q.push(coord);
                             }
                         }
@@ -491,7 +516,7 @@ window.addEventListener(
                     for (let i = 0; i < num && queue.length > 0; i++) {
                         const curr = q.shift();
 
-                        if (curr === undefined || map[curr.y][curr.x] < 100) {
+                        if (curr === undefined || map[curr.y][curr.x] < HIDDEN_OVERFLOW) {
                             continue;
                         }
 
@@ -540,10 +565,27 @@ window.addEventListener(
             openTile(tile);
         }
 
+        const toggleFlagAt = (tile: CoordsT) => {
+            const val = getMapVal(tile);
+
+            if (!isHidden(val) && !isFlag(val)) {
+                return;
+            }
+
+            if (isFlag(val)) {
+                removeFlagAt(tile);
+            } else {
+                setFlagAt(tile);
+            }
+        }
+
         const processRightClick = (coords: CoordsT) => {
             console.log('right click')
             const tile = getTileFromMouseCoords(coords);
-            map[tile.y][tile.x] = FLAG_VALUE;
+
+            toggleFlagAt(tile);
+
+            // map[tile.y][tile.x] = FLAG_VALUE;
             loadVisibleChunks();
         }
 

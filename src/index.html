@@ -77,9 +77,20 @@
         varying vec2 globalCoords;
         varying highp vec2 vTextureCoord;
 
-        vec2 getCoord(vec2 orig) {
-            if (orig.x >= 1.) {
-                return vec2(0., 0.);
+        float width = 1. / 11.;
+
+        vec2 getTexCoord(vec2 orig, float tileX) {
+            if (orig.x >= 150. * width) {
+                return vec2((tileX + 9.) * width, orig.y);
+            }
+
+            if (orig.x >= 100. * width) {
+                return vec2(tileX * width, orig.y);
+                // return vec2(0., orig.y);
+            }
+
+            if (orig.x >= 50. * width) {
+                return vec2((tileX + 9.) * width, orig.y);
             }
 
             return orig;
@@ -93,23 +104,11 @@
 
             vec2 maxP = fullSize / matrixSize;
 
+            float pXPart = p.x / maxP.x;
+
             float stroke = 2.;
-
-            if (p.x < stroke ||
-                p.x > maxP.x - stroke || 
-                p.y < stroke || 
-                p.y > maxP.y - stroke) {
-                gl_FragColor = vec4(vec3(0.), 1.);
-            } else {
-                gl_FragColor = texture2D(uSampler, vTextureCoord);
-            }
             
             
-            
-            //gl_FragColor = vec4(vec3(fract(pos.x)), 1.0);
-
-            // gl_FragColor = vec4(1.0, 1.0, 0., 0.);
-
             vec2 localPart = gl_FragCoord.xy / viewSize.xy;
 
             vec2 offsetPart = offset / fullSize;
@@ -130,10 +129,15 @@
                     p.y > maxP.y - stroke) {
                     gl_FragColor = vec4(vec3(0.), 1.);
                 } else {
-                    vec2 crd = getCoord(vTextureCoord);
+                    vec2 texCoord = getTexCoord(vTextureCoord, pXPart);
+
+                    if (vTextureCoord.x > 100. * width && vTextureCoord.x < 150. * width) {
+                        gl_FragColor = vec4(vec3(0.8), 1.);
+                    } else {
+                        gl_FragColor = texture2D(uSampler, texCoord);
+                    }
 
                     //gl_FragColor = texture2D(uSampler, vTextureCoord);
-                    gl_FragColor = texture2D(uSampler, crd);
                 }
             }
 
