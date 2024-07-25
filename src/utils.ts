@@ -25,3 +25,25 @@ export const negate = (coords: CoordsT) => {
         y: -coords.y
     }
 }
+
+export const range = (n: number, m?: number): number[] => {
+    if (m === undefined) {
+        return [...Array(n).keys()];
+    }
+
+    return range(m - n).map(x => x + n);
+}
+
+export const permutations = <T1, T2>(a: T1[], b: T2[]) => {
+    let res: (T1 | T2)[][] = [];
+    for (let i = 0; i < a.length; i++) {
+        for (let j = 0; j < b.length; j++) {
+            res.push([a[i], b[j]]);
+        }
+    }
+    return res;
+}
+
+export const randInt = (max: number) => {
+    return Math.floor(Math.random() * (max));
+}

@@ -40,12 +40,7 @@
 
         void main()
         {
-            //float size = resolution.x / l;
-
             pos = aPosition / fullSize * matrixSize;
-
-            // vec2 local = aPosition - offset;
-
             globalCoords = aPosition;
 
             vec2 local = aPosition - offset;
@@ -53,8 +48,6 @@
             vec2 shader = local / viewSize * 2. - 1.;
 
             gl_Position = vec4(shader, 0.0, 1.0);
-
-            //gl_Position = vec4(aPosition, 0., 1.);
 
             vTextureCoord = aTextureCoord;
         }
@@ -86,7 +79,6 @@
 
             if (orig.x >= 100. * width) {
                 return vec2(tileX * width, orig.y);
-                // return vec2(0., orig.y);
             }
 
             if (orig.x >= 50. * width) {
@@ -119,9 +111,6 @@
             {
                gl_FragColor = vec4(vec3(0., 1., 0.), 1.);
             } else {
-                //gl_FragColor = vec4(globalCoords.x / viewSize.x, 0., 0., 1.);
-
-                //gl_FragColor = texture2D(uSampler, vTextureCoord);
 
                 if (p.x < stroke ||
                     p.x > maxP.x - stroke || 
@@ -134,16 +123,20 @@
                     if (vTextureCoord.x > 100. * width && vTextureCoord.x < 150. * width) {
                         gl_FragColor = vec4(vec3(0.8), 1.);
                     } else {
+                        //vec4 c = texture2D(uSampler, texCoord);
+
+                        //vec4 color = vec4(1., 0., 0., 1.);
+
+                        //if (c.a == 0.) {
+                        //    gl_FragColor = vec4(1., 0., 0., 1.);
+                        //} else {
+                        //    gl_FragColor = c;
+                        //}
+
                         gl_FragColor = texture2D(uSampler, texCoord);
                     }
-
-                    //gl_FragColor = texture2D(uSampler, vTextureCoord);
                 }
             }
-
-            //gl_FragColor = vec4(0., 0., 0., 1.);
-
-            //gl_FragColor = vec4(st.x + offset.x / resolution.x, 0., 0., 1.);
         }
     </script>
 </body>

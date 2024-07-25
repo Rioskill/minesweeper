@@ -1,7 +1,9 @@
 import { GLBuffer } from "./buffer";
+import { BOMB_VALUE, HIDDEN_OVERFLOW } from "./consts";
+import { GameMap } from "./gameMap";
 import { CoordsT, makeCoords } from "./models";
 import { loadTexture } from "./texture";
-import { addVectors } from "./utils";
+import { addVectors, permutations, randInt, range } from "./utils";
 import { MinesweeperView } from "./window";
 
 // const ROWS = 10000;
@@ -25,83 +27,11 @@ const MINES = 400000;
 
 // const MINES = 10;
 
-const FLAG_VALUE = 9;
-const BOMB_VALUE = 10;
-
-const FLAG_OVERFLOW = 50;
-const HIDDEN_OVERFLOW = 100;
-
 const ROWL = 50;
 const COLL = 50;
 
 const CHUNKW = 30;
 const CHUNKH = 30;
-
-const range = (n: number, m?: number): number[] => {
-    if (m === undefined) {
-        return [...Array(n).keys()];
-    }
-
-    return range(m - n).map(x => x + n);
-}
-
-const permutations = <T1, T2>(a: T1[], b: T2[]) => {
-    let res: (T1 | T2)[][] = [];
-    for (let i = 0; i < a.length; i++) {
-        for (let j = 0; j < b.length; j++) {
-            res.push([a[i], b[j]]);
-        }
-    }
-    return res;
-}
-
-const randInt = (max: number) => {
-    return Math.floor(Math.random() * (max));
-}
-
-function generateMatrix(rows: number, cols: number, mines: number) {
-    const matrix = Array(rows).fill(0).map(() => Array(cols).fill(0));
-
-    range(mines).forEach(i => {
-        let row = randInt(rows);
-        let col = randInt(cols);
-
-        while (matrix[row][col] === BOMB_VALUE) {
-            row = randInt(rows);
-            col = randInt(cols);
-        }
-
-        matrix[row][col] = BOMB_VALUE;
-    })
-
-    const hasBomb = (i: number, j: number) => {
-        if (i < 0 ||
-            i >= ROWS ||
-            j < 0 ||
-            j >= COLS) {
-            return false;
-        }
-
-        return matrix[i][j] === BOMB_VALUE;
-    }
-
-    const calcValue = (y: number, x: number) => {
-        if (matrix[y][x] === BOMB_VALUE) {
-            return BOMB_VALUE;
-        }
-
-        const indices = range(-1, 2);
-
-        const bombCnt = permutations(indices, indices)
-            .filter(([i, j]) => !(i === 0 && j === 0))
-            .map(([i, j]) => (hasBomb(y + i, x + j) ? 1 : 0) as number)
-            .reduce((sum, n) => sum + n, 0)
-
-        return bombCnt;
-    }
-
-    return matrix.map((row, i) => row.map((_, j) => calcValue(i, j) + 100));
-}
 
 window.addEventListener(
     "load",
@@ -202,125 +132,22 @@ window.addEventListener(
             dataType: gl.FLOAT
         })
 
-        const createVertexGrid = () => {
-            const grid: number[] = [];
-
-            // const width = 1 / COLS;
-            // const height = 1 / ROWS;
-
-            const width = COLL;
-            const height = ROWL;
-
-            const mask = [
-                [0, 0],
-                [0, 1],
-                [1, 0],
-                [0, 1],
-                [1, 0],
-                [1, 1],
-            ]
-
-            for (let i = 0; i < ROWS; i++) {
-                const y = i * height;
-
-                for (let j = 0; j < COLS; j++) {
-                    const x = j * width;
-                    grid.push(
-                        ...mask.flatMap(([a, b]) => [x + a * width, y + b * height])
-                    );
-                }
-            }
-
-            return grid;
-        }
-
-        const createVertexGridChunk = (chunk: CoordsT) => {
-            const grid: number[] = [];
-
-            // const width = 1 / COLS;
-            // const height = 1 / ROWS;
-
-            const width = COLL;
-            const height = ROWL;
-
-            const mask = [
-                [0, 0],
-                [0, 1],
-                [1, 0],
-                [0, 1],
-                [1, 0],
-                [1, 1],
-            ]
-
-            for (let i = chunk.y * CHUNKH; i < Math.min((chunk.y + 1) * CHUNKH, ROWS); i++) {
-                const y = i * height;
-
-                for (let j = chunk.x * CHUNKW; j < Math.min((chunk.x + 1) * CHUNKW, COLS); j++) {
-                    const x = j * width;
-                    grid.push(
-                        ...mask.flatMap(([a, b]) => [x + a * width, y + b * height])
-                    );
-                }
-            }
-
-            return grid;
-        }
-
-        const createTextureCoords = (map: number[][]) => {
-            const coords: number[] = [];
-
-            const mask = [
-                [0, 0],
-                [0, 1],
-                [1, 0],
-                [0, 1],
-                [1, 0],
-                [1, 1]
-            ]
-
-            const width = 1 / 11;
-
-            for (let i = 0; i < ROWS * COLS; i++) {
-                // const num = (x: number) => x % 9;
-                const num = (x: number) => map[Math.floor(x / ROWS)][x % ROWS];
-                coords.push(
-                    ...mask.flatMap(([a, b]) => [(num(i) + a) * width, b])
-                )
-            }
-
-            return coords;
-        }
-
-        const createTextureCoordsChunk = (map: number[][], chunk: CoordsT) => {
-            const coords: number[] = [];
-
-            const mask = [
-                [0, 0],
-                [0, 1],
-                [1, 0],
-                [0, 1],
-                [1, 0],
-                [1, 1]
-            ]
-
-            const width = 1 / 11;
-
-            for (let i = chunk.y * CHUNKH; i < Math.min((chunk.y + 1) * CHUNKH, ROWS); i++) {
-                for (let j = chunk.x * CHUNKW; j < Math.min((chunk.x + 1) * CHUNKW, COLS); j++) {
-                    coords.push(
-                        ...mask.flatMap(([a, b]) => [(map[i][j] + a) * width, b])
-                    )
-                }
-            }
-
-            return coords;
-        }
-
         let dataArray: number[] = [];
 
+        const map = new GameMap({
+            ROWS,
+            COLS,
+            ROWL,
+            COLL,
+            CHUNKH,
+            CHUNKW
+        });
+
+        map.generateMatrix(MINES);
+
         const loadChunk = (chunk: CoordsT) => {
-            dataArray = createVertexGridChunk(chunk);
-            const textureCoords = createTextureCoordsChunk(map, chunk);
+            dataArray = map.createVertexGridChunk(chunk);
+            const textureCoords = map.createTextureCoordsChunk(chunk);
 
             vBuf.setData(new Float32Array(dataArray));
             textureBuffer.setData(new Float32Array(textureCoords));
@@ -328,8 +155,8 @@ window.addEventListener(
 
         const loadChunks = (chunks: CoordsT[]) => {
             // console.log('load chunks', chunks)
-            dataArray = chunks.flatMap(createVertexGridChunk);
-            const textureCoords = chunks.flatMap(chunk => createTextureCoordsChunk(map, chunk));
+            dataArray = chunks.flatMap(map.createVertexGridChunk.bind(map));
+            const textureCoords = chunks.flatMap(chunk => map.createTextureCoordsChunk(chunk));
 
             vBuf.setData(new Float32Array(dataArray));
             textureBuffer.setData(new Float32Array(textureCoords));
@@ -343,9 +170,11 @@ window.addEventListener(
             dataType: gl.FLOAT,
         })
 
-        const map = generateMatrix(ROWS, COLS, MINES);
+        // const map = generateMatrix(ROWS, COLS, MINES);
 
-        console.log('map', map);
+
+
+        console.log('map', map.map);
 
         gl.useProgram(program);
 
@@ -439,47 +268,11 @@ window.addEventListener(
 
         let originalOffset: { x: number, y: number }
 
-        const getMapVal = (coords: CoordsT) => {
-            return map[coords.y][coords.x];
-        }
-
-
-        const isHidden = (val: number) => {
-            return val >= HIDDEN_OVERFLOW && val < FLAG_OVERFLOW + HIDDEN_OVERFLOW;
-        }
-
-        const isFlag = (val: number) => {
-            return val >= FLAG_OVERFLOW && val < HIDDEN_OVERFLOW || val >= FLAG_OVERFLOW + HIDDEN_OVERFLOW;
-        }
-
-        const isHiddenAt = (tile: CoordsT) => {
-            return isHidden(getMapVal(tile));
-        }
-
-        const isFlagAt = (tile: CoordsT) => {
-            return isFlag(getMapVal(tile));
-        }
-
-        const setFlagAt = (tile: CoordsT) => {
-            map[tile.y][tile.x] += FLAG_OVERFLOW;
-        }
-
-        const removeFlagAt = (tile: CoordsT) => {
-            map[tile.y][tile.x] -= FLAG_OVERFLOW;
-        }
-
-        const coordsInBounds = (coords: CoordsT) => {
-            return coords.x >= 0 &&
-                   coords.y >= 0 &&
-                   coords.x < COLS &&
-                   coords.y < ROWS;
-        }
-
         const openTile = (tileCoords: CoordsT) => {
-            const val = getMapVal(tileCoords);
+            const val = map.getMapVal(tileCoords);
 
-            if (isHidden(val) && val !== HIDDEN_OVERFLOW) {
-                map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
+            if (map.isHidden(val) && val !== HIDDEN_OVERFLOW) {
+                map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
                 loadVisibleChunks();
             } else if (val === HIDDEN_OVERFLOW) {
                 const q: CoordsT[] = [];
@@ -494,17 +287,17 @@ window.addEventListener(
                 ]
 
                 const processTile = (tileCoords: CoordsT) => {
-                    map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
+                    map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
                     
-                    if (map[tileCoords.y][tileCoords.x] > 0) {
+                    if (map.map[tileCoords.y][tileCoords.x] > 0) {
                         return;
                     }
 
                     const coords = coordsDeltas.map(delta => addVectors(tileCoords, delta));
 
                     coords.forEach(coord => {
-                        if (coordsInBounds(coord)) {
-                            const val = getMapVal(coord);
+                        if (map.tileInBounds(coord)) {
+                            const val = map.getMapVal(coord);
                             if (val >= HIDDEN_OVERFLOW && val !== HIDDEN_OVERFLOW + BOMB_VALUE) {
                                 q.push(coord);
                             }
@@ -516,7 +309,7 @@ window.addEventListener(
                     for (let i = 0; i < num && queue.length > 0; i++) {
                         const curr = q.shift();
 
-                        if (curr === undefined || map[curr.y][curr.x] < HIDDEN_OVERFLOW) {
+                        if (curr === undefined || map.map[curr.y][curr.x] < HIDDEN_OVERFLOW) {
                             continue;
                         }
 
@@ -538,6 +331,8 @@ window.addEventListener(
             const HCollisionCoords = mainView.getHCollisionPos(coords);
             const VCollisionCoords = mainView.getVCollisionPos(coords);
 
+            let collision = false;
+
             if (HCollisionCoords.collision) {
                 console.log('H collision')
                 HScrollClickPos = coords;
@@ -545,6 +340,8 @@ window.addEventListener(
                     x: mainView.offset.x,
                     y: mainView.offset.y
                 };
+
+                collision = true;
             } else {
                 HScrollClickPos = undefined;
             }
@@ -556,26 +353,16 @@ window.addEventListener(
                     x: mainView.offset.x,
                     y: mainView.offset.y
                 }
+
+                collision = true;
             } else {
                 VScrollClickPos = undefined;
             }
 
-            const tile = getTileFromMouseCoords(coords)
-
-            openTile(tile);
-        }
-
-        const toggleFlagAt = (tile: CoordsT) => {
-            const val = getMapVal(tile);
-
-            if (!isHidden(val) && !isFlag(val)) {
-                return;
-            }
-
-            if (isFlag(val)) {
-                removeFlagAt(tile);
-            } else {
-                setFlagAt(tile);
+            if (!collision) {
+                const tile = getTileFromMouseCoords(coords)
+    
+                openTile(tile);
             }
         }
 
@@ -583,9 +370,8 @@ window.addEventListener(
             console.log('right click')
             const tile = getTileFromMouseCoords(coords);
 
-            toggleFlagAt(tile);
-
-            // map[tile.y][tile.x] = FLAG_VALUE;
+            map.toggleFlagAt(tile);
+            
             loadVisibleChunks();
         }
 
