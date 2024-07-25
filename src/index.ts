@@ -1,5 +1,5 @@
 import { GLBuffer } from "./buffer";
-import { BOMB_VALUE, HIDDEN_OVERFLOW } from "./consts";
+import { MINE_VALUE, HIDDEN_OVERFLOW } from "./consts";
 import { GameMap } from "./gameMap";
 import { CoordsT, makeCoords } from "./models";
 import { loadTexture } from "./texture";
@@ -134,6 +134,8 @@ window.addEventListener(
 
         let dataArray: number[] = [];
 
+        let minesVisible: boolean = false;
+
         const map = new GameMap({
             ROWS,
             COLS,
@@ -169,10 +171,6 @@ window.addEventListener(
             type: gl.ARRAY_BUFFER,
             dataType: gl.FLOAT,
         })
-
-        // const map = generateMatrix(ROWS, COLS, MINES);
-
-
 
         console.log('map', map.map);
 
@@ -235,9 +233,6 @@ window.addEventListener(
         mainView.onOffsetUpdate = loadVisibleChunks;
 
         document.addEventListener('keydown', event => {
-
-            // console.log(mainView.fullSize, mainView.offset);
-
             if (event.code === 'ArrowLeft') {
                 mainView.updateOffset(makeCoords(-10, 0));
             } else if (event.code === 'ArrowRight') {
@@ -268,11 +263,23 @@ window.addEventListener(
 
         let originalOffset: { x: number, y: number }
 
+        const showAllMines = () => {
+            // map.minePositions.forEach(position => {
+            //     map.map[position.y][position.x] = MINE_VALUE;
+            // })
+            minesVisible = true;
+        }
+
         const openTile = (tileCoords: CoordsT) => {
             const val = map.getMapVal(tileCoords);
 
             if (map.isHidden(val) && val !== HIDDEN_OVERFLOW) {
                 map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
+
+                if (map.getMapVal(tileCoords) === MINE_VALUE) {
+                    showAllMines();
+                }
+
                 loadVisibleChunks();
             } else if (val === HIDDEN_OVERFLOW) {
                 const q: CoordsT[] = [];
@@ -298,7 +305,7 @@ window.addEventListener(
                     coords.forEach(coord => {
                         if (map.tileInBounds(coord)) {
                             const val = map.getMapVal(coord);
-                            if (val >= HIDDEN_OVERFLOW && val !== HIDDEN_OVERFLOW + BOMB_VALUE) {
+                            if (val >= HIDDEN_OVERFLOW && val !== HIDDEN_OVERFLOW + MINE_VALUE) {
                                 q.push(coord);
                             }
                         }
@@ -371,7 +378,7 @@ window.addEventListener(
             const tile = getTileFromMouseCoords(coords);
 
             map.toggleFlagAt(tile);
-            
+
             loadVisibleChunks();
         }
 
@@ -440,6 +447,8 @@ window.addEventListener(
 
             setVec2FUniform(gl, program, "offset", [mainView.offset.x, mainView.offset.y]);
             setVec2FUniform(gl, program, "matrixSize", [COLS, ROWS]);
+
+            setFUniform(gl, program, "minesVisible", minesVisible ? 1 : 0);
 
             setFUniform(gl, program, "l", mainView.fullSize[0] / COLS);
             gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);

@@ -1,5 +1,5 @@
-import { BOMB_VALUE, FLAG_OVERFLOW, HIDDEN_OVERFLOW } from "./consts";
-import { CoordsT } from "./models";
+import { MINE_VALUE, FLAG_OVERFLOW, HIDDEN_OVERFLOW } from "./consts";
+import { CoordsT, makeCoords } from "./models";
 import { permutations, randInt, range } from "./utils";
 
 interface GameMapProps {
@@ -14,7 +14,7 @@ interface GameMapProps {
 }
 
 export class GameMap {
-    map: number[][];
+    map: number[][]
 
     ROWS: number
     COLS: number
@@ -39,19 +39,20 @@ export class GameMap {
     generateMatrix(mines: number) {
         const rows = this.ROWS;
         const cols = this.COLS;
-        
+
         const matrix = Array(rows).fill(0).map(() => Array(cols).fill(0));
     
         range(mines).forEach(i => {
             let row = randInt(rows);
             let col = randInt(cols);
     
-            while (matrix[row][col] === BOMB_VALUE) {
+            while (matrix[row][col] === MINE_VALUE) {
                 row = randInt(rows);
                 col = randInt(cols);
             }
     
-            matrix[row][col] = BOMB_VALUE;
+            matrix[row][col] = MINE_VALUE;
+            // this.minePositions.push(makeCoords(col, row));
         })
     
         const hasBomb = (i: number, j: number) => {
@@ -62,12 +63,12 @@ export class GameMap {
                 return false;
             }
     
-            return matrix[i][j] === BOMB_VALUE;
+            return matrix[i][j] === MINE_VALUE;
         }
     
         const calcValue = (y: number, x: number) => {
-            if (matrix[y][x] === BOMB_VALUE) {
-                return BOMB_VALUE;
+            if (matrix[y][x] === MINE_VALUE) {
+                return MINE_VALUE;
             }
     
             const indices = range(-1, 2);
@@ -79,8 +80,7 @@ export class GameMap {
     
             return bombCnt;
         }
-    
-        // return matrix.map((row, i) => row.map((_, j) => calcValue(i, j) + 100));
+
         this.map = matrix.map((row, i) => row.map((_, j) => calcValue(i, j) + 100));
     }
     

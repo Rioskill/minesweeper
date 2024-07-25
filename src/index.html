@@ -64,6 +64,8 @@
         uniform float l;
         uniform vec2 matrixSize;
 
+        uniform float minesVisible;
+
         uniform sampler2D uSampler;
 
         varying vec2 pos;
@@ -78,6 +80,10 @@
             }
 
             if (orig.x >= 100. * width) {
+                if (orig.x >= 110. * width && minesVisible == 1.) {
+                    return vec2((tileX + 10.) * width, orig.y);
+                }
+
                 return vec2(tileX * width, orig.y);
             }
 
@@ -86,6 +92,14 @@
             }
 
             return orig;
+        }
+
+        bool isGrey(float coordX) {
+            return coordX >= 100. * width &&
+                   coordX <  110. * width ||
+                   coordX >= 110. * width &&
+                   coordX <= 111. * width &&
+                   minesVisible == 0.;
         }
 
         void main()
@@ -120,7 +134,7 @@
                 } else {
                     vec2 texCoord = getTexCoord(vTextureCoord, pXPart);
 
-                    if (vTextureCoord.x > 100. * width && vTextureCoord.x < 150. * width) {
+                    if (isGrey(vTextureCoord.x)) {
                         gl_FragColor = vec4(vec3(0.8), 1.);
                     } else {
                         //vec4 c = texture2D(uSampler, texCoord);
