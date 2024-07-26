@@ -64,18 +64,12 @@ window.addEventListener(
             return;
         }
 
-        // gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-
         const vSource = document.querySelector("#vertex-shader");
 
         if (vSource === null) {
             console.error('no vertex shader');
             return;
         }
-
-        // const vertexShader = gl.createShader(gl.VERTEX_SHADER)!;
-        // gl.shaderSource(vertexShader, source.innerHTML);
-        // gl.compileShader(vertexShader);
 
         const fSource = document.querySelector("#fragment-shader");
 
@@ -84,51 +78,11 @@ window.addEventListener(
             return;
         }
 
-        // const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!;
-        // gl.shaderSource(fragmentShader, source.innerHTML);
-        // gl.compileShader(fragmentShader);
-
-        // error_log = gl.getShaderInfoLog(fragmentShader);
-        // console.log(error_log);
-
-        // let program = gl.createProgram();
-
         const renderer = new GLRenderer({
             gl: gl,
             vertexShaderSource: vSource.innerHTML,
             fragmenShaderSource: fSource.innerHTML
         });
-
-        // if (program === null) {
-        //     console.error('program is null');
-        //     return;
-        // }
-
-        // gl.attachShader(program, vertexShader);
-        // gl.attachShader(program, fragmentShader);
-        // gl.linkProgram(program);
-        // gl.detachShader(program, vertexShader);
-        // gl.detachShader(program, fragmentShader);
-        // gl.deleteShader(vertexShader);
-        // gl.deleteShader(fragmentShader);
-
-        // if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        //     const linkErrLog = gl.getProgramInfoLog(program);
-        //     console.error(`Shader program did not link successfully. Error log: ${linkErrLog}`)
-        //     return;
-        // }
-
-        // const vBuf = new GLBuffer({
-        //     gl: gl,
-        //     location: locations.vertexCoords,
-        //     size: 2,
-        //     type: gl.ARRAY_BUFFER,
-        //     dataType: gl.FLOAT
-        // })
-
-        // let dataArray: number[] = [];
-
-        // let minesVisible: boolean = false;
 
         const map = new GameMap({
             ROWS,
@@ -141,21 +95,7 @@ window.addEventListener(
 
         map.generateMatrix(MINES);
 
-        // const textureBuffer = new GLBuffer({
-        //     gl: gl,
-        //     location: locations.textureCoords,
-        //     size: 2,
-        //     type: gl.ARRAY_BUFFER,
-        //     dataType: gl.FLOAT,
-        // })
-
         console.log('map', map.map);
-
-        // gl.useProgram(program);
-
-
-        const canvasContainer = document.querySelector(".canvas-container")!;
-
         canvas.oncontextmenu = () => false;
 
         const mainView = new MinesweeperView({
@@ -176,10 +116,6 @@ window.addEventListener(
             renderer: renderer
         })
 
-        // let currentChunk: CoordsT = makeCoords(0, 0);
-
-        // loadVisibleChunks();
-
         mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
 
         document.addEventListener('keydown', event => {
@@ -194,10 +130,7 @@ window.addEventListener(
             }
         })
 
-        // let canvasCoords = mainView.canvasCoords;
-
         window.addEventListener('resize', () => {
-            // canvasCoords = mainView.canvasCoords;
             mainView.updateCanvasCoords();
         })
 
@@ -212,7 +145,6 @@ window.addEventListener(
             } else if (event.button === 2) {
                 engine.processRightClick(coords);
             }
-
         })
 
         window.addEventListener('mousemove', event => {
