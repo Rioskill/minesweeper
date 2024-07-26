@@ -163,8 +163,6 @@ export class GLRenderer {
         ROWS: number
 
         minesVisible: boolean
-
-        cb: ()=>void
     }) {
         // console.log('render')
         // this.gl.viewport(0, 0, mainView.viewSize.x, mainView.viewSize.y);
@@ -182,7 +180,5 @@ export class GLRenderer {
 
         // gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.dataLength)
-
-        requestAnimationFrame(props.cb);
     }
 }

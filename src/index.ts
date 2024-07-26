@@ -194,220 +194,37 @@ window.addEventListener(
             }
         })
 
-        let canvasCoords = mainView.canvasCoords;
-
-        const getTileFromMouseCoords = (coords: CoordsT) => {
-            return {
-                x: Math.floor((coords.x + mainView.offset.x) / COLL),
-                y: Math.floor((mainView.viewSize.y - coords.y + mainView.offset.y) / ROWL)
-            }
-        }
+        // let canvasCoords = mainView.canvasCoords;
 
         window.addEventListener('resize', () => {
-            console.log('resize');
-            canvasCoords = mainView.canvasCoords;
+            // canvasCoords = mainView.canvasCoords;
+            mainView.updateCanvasCoords();
         })
-
-        let HScrollClickPos: { x: number, y: number } | undefined = undefined;
-        let VScrollClickPos: { x: number, y: number } | undefined = undefined;
-
-        let originalOffset: { x: number, y: number }
-
-        const showAllMines = () => {
-            engine.minesVisible = true;
-        }
-
-        const openTile = (tileCoords: CoordsT) => {
-            const val = map.getMapVal(tileCoords);
-
-            if (map.isHidden(val) && val !== HIDDEN_OVERFLOW) {
-                map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
-
-                if (map.getMapVal(tileCoords) === MINE_VALUE) {
-                    showAllMines();
-                }
-
-                engine.loadVisibleChunks();
-            } else if (val === HIDDEN_OVERFLOW) {
-                const q: CoordsT[] = [];
-
-                q.push(tileCoords);
-
-                const coordsDeltas = [
-                    makeCoords(-1, 0),
-                    makeCoords(0, -1),
-                    makeCoords(1, 0),
-                    makeCoords(0, 1)
-                ]
-
-                const processTile = (tileCoords: CoordsT) => {
-                    map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
-                    
-                    if (map.map[tileCoords.y][tileCoords.x] > 0) {
-                        return;
-                    }
-
-                    const coords = coordsDeltas.map(delta => addVectors(tileCoords, delta));
-
-                    coords.forEach(coord => {
-                        if (map.tileInBounds(coord)) {
-                            const val = map.getMapVal(coord);
-                            if (val >= HIDDEN_OVERFLOW && val !== HIDDEN_OVERFLOW + MINE_VALUE) {
-                                q.push(coord);
-                            }
-                        }
-                    })
-                }
-
-                const processTilesFromQueue = (queue: CoordsT[], num: number) => {
-                    for (let i = 0; i < num && queue.length > 0; i++) {
-                        const curr = q.shift();
-
-                        if (curr === undefined || map.map[curr.y][curr.x] < HIDDEN_OVERFLOW) {
-                            continue;
-                        }
-
-                        processTile(curr);
-                    }
-
-                    if (queue.length > 0) {
-                        this.setTimeout(()=>processTilesFromQueue(queue, num), 0);
-                    }
-
-                    engine.loadVisibleChunks();
-                }
-
-                processTilesFromQueue(q, 1000);
-            }
-        }
-
-        const processLeftClick = (coords: CoordsT) => {
-            const HCollisionCoords = mainView.getHCollisionPos(coords);
-            const VCollisionCoords = mainView.getVCollisionPos(coords);
-
-            let collision = false;
-
-            if (HCollisionCoords.collision) {
-                console.log('H collision')
-                HScrollClickPos = coords;
-                originalOffset = {
-                    x: mainView.offset.x,
-                    y: mainView.offset.y
-                };
-
-                collision = true;
-            } else {
-                HScrollClickPos = undefined;
-            }
-
-            if (VCollisionCoords.collision) {
-                console.log('V collision');
-                VScrollClickPos = coords;
-                originalOffset = {
-                    x: mainView.offset.x,
-                    y: mainView.offset.y
-                }
-
-                collision = true;
-            } else {
-                VScrollClickPos = undefined;
-            }
-
-            if (!collision) {
-                const tile = getTileFromMouseCoords(coords)
-    
-                openTile(tile);
-            }
-        }
-
-        const processRightClick = (coords: CoordsT) => {
-            console.log('right click')
-            const tile = getTileFromMouseCoords(coords);
-
-            map.toggleFlagAt(tile);
-
-            engine.loadVisibleChunks();
-        }
 
         canvas.addEventListener('mousedown', event => {
             const coords = {
-                x: event.clientX - canvasCoords.x,
-                y: event.clientY - canvasCoords.y
+                x: event.clientX - mainView.canvasCoords.x,
+                y: event.clientY - mainView.canvasCoords.y
             };
 
             if (event.button === 0) {
-                processLeftClick(coords);
+                engine.processLeftClick(coords);
             } else if (event.button === 2) {
-                processRightClick(coords);
+                engine.processRightClick(coords);
             }
 
         })
 
         window.addEventListener('mousemove', event => {
-            if (HScrollClickPos === undefined && VScrollClickPos === undefined) {
-                return;
-            }
-
-            const coords = {
-                x: event.clientX - canvasCoords.x,
-                y: event.clientY - canvasCoords.y
-            };
-
-            if (HScrollClickPos) {
-                const newOffset = {
-                    x: HScrollClickPos.x - coords.x,
-                    y: HScrollClickPos.y - coords.y
-                }
-
-                mainView.setOffsetX(originalOffset.x - newOffset.x * mainView.fullSize.x / mainView.viewSize.x)
-            } else if (VScrollClickPos) {
-                const newOffset = {
-                    x: VScrollClickPos.x - coords.x,
-                    y: VScrollClickPos.y - coords.y
-                }
-
-                mainView.setOffsetY(originalOffset.y + newOffset.y * mainView.fullSize.y / mainView.viewSize.y);
-            }
+            engine.processMouseMove(makeCoords(event.clientX, event.clientY));
         })
 
-        window.addEventListener('mouseup', event => {
-            HScrollClickPos = undefined;
-            VScrollClickPos = undefined;
+        window.addEventListener('mouseup', () => {
+            engine.processMouseUp();
         })
-
-        
-        // const debounceWheel = (callback, wait) => {
-        //     let wheelSum = 0;
-        //     let timeoutId: number | undefined = undefined;
-        //     return (...args) => {
-        //     //   window.clearTimeout(timeoutId);
-        //         if (timeoutId !== undefined) {
-        //             wheelSum
-        //         }    
-
-        //         timeoutId = window.setTimeout(() => {
-        //             callback(wheelSum);
-        //             window.clearTimeout(timeoutId);
-        //         }, wait);
-        //     };
-        //   }
-
-        let scrollCoord = makeCoords(0, 0);
-        let scrollTimeoutId: number | undefined = undefined;
 
         canvas.addEventListener('wheel', event => {
-            // if (scrollTimeoutId === undefined) {
-            //     scrollTimeoutId = window.setTimeout(() => {
-
-            //         mainView.updateOffset(scrollCoord);
-            //         scrollCoord = makeCoords(0, 0);
-            //         window.clearTimeout(scrollTimeoutId);
-            //         scrollTimeoutId = undefined;
-            //     }, 10)
-            // }
-            // scrollCoord = addVectors(scrollCoord, makeCoords(event.deltaX, -event.deltaY))
-
-            mainView.updateOffset(makeCoords(event.deltaX, -event.deltaY));
+            engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
         })
 
         engine.loadVisibleChunks();

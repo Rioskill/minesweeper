@@ -16,6 +16,11 @@ export class MinesweeperView {
     viewSize: CoordsT;
     offset: CoordsT;
 
+    HScrollClickPos: CoordsT | undefined;
+    VScrollClickPos: CoordsT | undefined;
+    originalOffset: CoordsT;
+
+    canvasCoords: CoordsT
     canvas: HTMLCanvasElement;
 
     onOffsetUpdate?: () => void;
@@ -25,15 +30,23 @@ export class MinesweeperView {
         this.viewSize = props.viewSize;
         this.offset = props.offset || { x: 0, y: 0 };
 
+        this.HScrollClickPos = undefined;
+        this.VScrollClickPos = undefined;
+
         this.canvas = props.canvas;
+        this.canvasCoords = this.getCanvasCoords();
     }
 
-    get canvasCoords() {
+    getCanvasCoords() {
         const coords = this.canvas.getBoundingClientRect();
         return {
             x: coords.x,
             y: coords.y
         };
+    }
+
+    updateCanvasCoords() {
+        this.canvasCoords = this.getCanvasCoords();
     }
 
     get HScrollCoords() {
@@ -117,5 +130,70 @@ export class MinesweeperView {
 
         this.canvas.width = this.viewSize.x;
         this.canvas.height = this.viewSize.y;
+    }
+
+    processScrollClick(coords: CoordsT) {
+        const HCollisionCoords = this.getHCollisionPos(coords);
+        const VCollisionCoords = this.getVCollisionPos(coords);
+
+        let collision = false;
+
+        if (HCollisionCoords.collision) {
+            this.HScrollClickPos = coords;
+            this.originalOffset = {
+                x: this.offset.x,
+                y: this.offset.y
+            };
+
+            collision = true;
+        } else {
+            this.HScrollClickPos = undefined;
+        }
+
+        if (VCollisionCoords.collision) {
+            this.VScrollClickPos = coords;
+            this.originalOffset = {
+                x: this.offset.x,
+                y: this.offset.y
+            }
+
+            collision = true;
+        } else {
+            this.VScrollClickPos = undefined;
+        }
+
+        return collision;
+    }
+
+    processScrollMove(mouseCoords: CoordsT) {
+        if (this.HScrollClickPos === undefined && this.VScrollClickPos === undefined) {
+            return;
+        }
+
+        const coords = {
+            x: mouseCoords.x - this.canvasCoords.x,
+            y: mouseCoords.y - this.canvasCoords.y
+        };
+
+        if (this.HScrollClickPos) {
+            const newOffset = {
+                x: this.HScrollClickPos.x - coords.x,
+                y: this.HScrollClickPos.y - coords.y
+            }
+
+            this.setOffsetX(this.originalOffset.x - newOffset.x * this.fullSize.x / this.viewSize.x)
+        } else if (this.VScrollClickPos) {
+            const newOffset = {
+                x: this.VScrollClickPos.x - coords.x,
+                y: this.VScrollClickPos.y - coords.y
+            }
+
+            this.setOffsetY(this.originalOffset.y + newOffset.y * this.fullSize.y / this.viewSize.y);
+        }
+    }
+
+    processMouseUp() {
+        this.HScrollClickPos = undefined;
+        this.VScrollClickPos = undefined;
     }
 }
