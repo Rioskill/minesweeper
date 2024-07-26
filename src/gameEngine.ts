@@ -49,8 +49,9 @@ export class GameEngine {
 
     update() {
         this.view.updateViewSize();
+        // this.loadVisibleChunks();
 
-        requestAnimationFrame(()=>this.renderer.render({
+        this.renderer.render({
             viewportSize: this.view.viewSize,
             fullSize: this.view.fullSize,
             viewSize: this.view.viewSize,
@@ -60,6 +61,6 @@ export class GameEngine {
             ROWS: this.map.ROWS,
             minesVisible: this.minesVisible,
             cb: ()=>this.update()
-        }))
+        })
     }
 }

@@ -32,8 +32,8 @@ const MINES = 400000;
 const ROWL = 50;
 const COLL = 50;
 
-const CHUNKW = 20;
-const CHUNKH = 20;
+const CHUNKW = 40;
+const CHUNKH = 40;
 
 window.addEventListener(
     "load",
@@ -396,21 +396,21 @@ window.addEventListener(
         let scrollTimeoutId: number | undefined = undefined;
 
         canvas.addEventListener('wheel', event => {
-            if (scrollTimeoutId === undefined) {
-                scrollTimeoutId = window.setTimeout(() => {
+            // if (scrollTimeoutId === undefined) {
+            //     scrollTimeoutId = window.setTimeout(() => {
 
-                    mainView.updateOffset(scrollCoord);
-                    scrollCoord = makeCoords(0, 0);
-                    window.clearTimeout(scrollTimeoutId);
-                    scrollTimeoutId = undefined;
-                }, 10)
-            }
-            scrollCoord = addVectors(scrollCoord, makeCoords(event.deltaX, -event.deltaY))
+            //         mainView.updateOffset(scrollCoord);
+            //         scrollCoord = makeCoords(0, 0);
+            //         window.clearTimeout(scrollTimeoutId);
+            //         scrollTimeoutId = undefined;
+            //     }, 10)
+            // }
+            // scrollCoord = addVectors(scrollCoord, makeCoords(event.deltaX, -event.deltaY))
+
+            mainView.updateOffset(makeCoords(event.deltaX, -event.deltaY));
         })
 
         engine.loadVisibleChunks();
-
-        // requestAnimationFrame(render);
 
         this.requestAnimationFrame(() => engine.update());
 
