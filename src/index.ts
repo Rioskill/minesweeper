@@ -1,10 +1,12 @@
 import { GLBuffer } from "./buffer";
 import { MINE_VALUE, HIDDEN_OVERFLOW } from "./consts";
+import { GameEngine } from "./gameEngine";
 import { GameMap } from "./gameMap";
+import { GLRenderer } from "./glRenderer";
 import { CoordsT, makeCoords } from "./models";
 import { loadTexture } from "./texture";
 import { addVectors, permutations, randInt, range } from "./utils";
-import { MinesweeperView } from "./window";
+import { MinesweeperView } from "./view";
 
 // const ROWS = 10000;
 // const COLS = 10000;
@@ -30,8 +32,8 @@ const MINES = 400000;
 const ROWL = 50;
 const COLL = 50;
 
-const CHUNKW = 30;
-const CHUNKH = 30;
+const CHUNKW = 20;
+const CHUNKH = 20;
 
 window.addEventListener(
     "load",
@@ -62,79 +64,71 @@ window.addEventListener(
             return;
         }
 
-        gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+        // gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
-        let source = document.querySelector("#vertex-shader");
+        const vSource = document.querySelector("#vertex-shader");
 
-        if (source === null) {
+        if (vSource === null) {
             console.error('no vertex shader');
             return;
         }
 
-        const vertexShader = gl.createShader(gl.VERTEX_SHADER)!;
-        gl.shaderSource(vertexShader, source.innerHTML);
-        gl.compileShader(vertexShader);
+        // const vertexShader = gl.createShader(gl.VERTEX_SHADER)!;
+        // gl.shaderSource(vertexShader, source.innerHTML);
+        // gl.compileShader(vertexShader);
 
-        let error_log = gl.getShaderInfoLog(vertexShader);
-        console.log(error_log);
+        const fSource = document.querySelector("#fragment-shader");
 
-        source = document.querySelector("#fragment-shader");
-
-        if (source === null) {
+        if (fSource === null) {
             console.error('no fragment shader');
             return;
         }
 
-        const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!;
-        gl.shaderSource(fragmentShader, source.innerHTML);
-        gl.compileShader(fragmentShader);
+        // const fragmentShader = gl.createShader(gl.FRAGMENT_SHADER)!;
+        // gl.shaderSource(fragmentShader, source.innerHTML);
+        // gl.compileShader(fragmentShader);
 
-        error_log = gl.getShaderInfoLog(fragmentShader);
-        console.log(error_log);
+        // error_log = gl.getShaderInfoLog(fragmentShader);
+        // console.log(error_log);
 
-        let program = gl.createProgram();
+        // let program = gl.createProgram();
 
-        if (program === null) {
-            console.error('program is null');
-            return;
-        }
-
-        gl.attachShader(program, vertexShader);
-        gl.attachShader(program, fragmentShader);
-        gl.linkProgram(program);
-        gl.detachShader(program, vertexShader);
-        gl.detachShader(program, fragmentShader);
-        gl.deleteShader(vertexShader);
-        gl.deleteShader(fragmentShader);
-
-        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            const linkErrLog = gl.getProgramInfoLog(program);
-            console.error(`Shader program did not link successfully. Error log: ${linkErrLog}`)
-            return;
-        }
-
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        // const texture = loadTexture(gl, "/textures/bomb.png");
-        const texture = loadTexture(gl, "/textures/digits.png");
-
-        const locations = {
-            vertexCoords: gl.getAttribLocation(program, "aPosition"),
-            textureCoords: gl.getAttribLocation(program, "aTextureCoord"),
-            digitNum: gl.getAttribLocation(program, "digitNum"),
-            sampler: gl.getUniformLocation(program, "uSampler"),
-        }
-
-        const vBuf = new GLBuffer({
+        const renderer = new GLRenderer({
             gl: gl,
-            location: locations.vertexCoords,
-            size: 2,
-            type: gl.ARRAY_BUFFER,
-            dataType: gl.FLOAT
-        })
+            vertexShaderSource: vSource.innerHTML,
+            fragmenShaderSource: fSource.innerHTML
+        });
 
-        let dataArray: number[] = [];
+        // if (program === null) {
+        //     console.error('program is null');
+        //     return;
+        // }
 
-        let minesVisible: boolean = false;
+        // gl.attachShader(program, vertexShader);
+        // gl.attachShader(program, fragmentShader);
+        // gl.linkProgram(program);
+        // gl.detachShader(program, vertexShader);
+        // gl.detachShader(program, fragmentShader);
+        // gl.deleteShader(vertexShader);
+        // gl.deleteShader(fragmentShader);
+
+        // if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        //     const linkErrLog = gl.getProgramInfoLog(program);
+        //     console.error(`Shader program did not link successfully. Error log: ${linkErrLog}`)
+        //     return;
+        // }
+
+        // const vBuf = new GLBuffer({
+        //     gl: gl,
+        //     location: locations.vertexCoords,
+        //     size: 2,
+        //     type: gl.ARRAY_BUFFER,
+        //     dataType: gl.FLOAT
+        // })
+
+        // let dataArray: number[] = [];
+
+        // let minesVisible: boolean = false;
 
         const map = new GameMap({
             ROWS,
@@ -147,44 +141,18 @@ window.addEventListener(
 
         map.generateMatrix(MINES);
 
-        const loadChunk = (chunk: CoordsT) => {
-            dataArray = map.createVertexGridChunk(chunk);
-            const textureCoords = map.createTextureCoordsChunk(chunk);
-
-            vBuf.setData(new Float32Array(dataArray));
-            textureBuffer.setData(new Float32Array(textureCoords));
-        }
-
-        const loadChunks = (chunks: CoordsT[]) => {
-            // console.log('load chunks', chunks)
-            dataArray = chunks.flatMap(map.createVertexGridChunk.bind(map));
-            const textureCoords = chunks.flatMap(chunk => map.createTextureCoordsChunk(chunk));
-
-            vBuf.setData(new Float32Array(dataArray));
-            textureBuffer.setData(new Float32Array(textureCoords));
-        }
-
-        const textureBuffer = new GLBuffer({
-            gl: gl,
-            location: locations.textureCoords,
-            size: 2,
-            type: gl.ARRAY_BUFFER,
-            dataType: gl.FLOAT,
-        })
+        // const textureBuffer = new GLBuffer({
+        //     gl: gl,
+        //     location: locations.textureCoords,
+        //     size: 2,
+        //     type: gl.ARRAY_BUFFER,
+        //     dataType: gl.FLOAT,
+        // })
 
         console.log('map', map.map);
 
-        gl.useProgram(program);
+        // gl.useProgram(program);
 
-
-        // Tell WebGL we want to affect texture unit 0
-        gl.activeTexture(gl.TEXTURE0);
-
-        // Bind the texture to texture unit 0
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-
-        // Tell the shader we bound the texture to texture unit 0
-        gl.uniform1i(locations.sampler, 0);
 
         const canvasContainer = document.querySelector(".canvas-container")!;
 
@@ -202,35 +170,17 @@ window.addEventListener(
             canvas: canvas
         })
 
-        let currentChunk: CoordsT = makeCoords(0, 0);
+        const engine = new GameEngine({
+            map: map,
+            view: mainView,
+            renderer: renderer
+        })
 
-        const getChunk = (coords: CoordsT) => {
-            return {
-                x: Math.floor(coords.x / COLL / CHUNKW),
-                y: Math.floor(coords.y / ROWL / CHUNKH)
-            }
-        }
+        // let currentChunk: CoordsT = makeCoords(0, 0);
 
-        const loadVisibleChunks = () => {
-            const chunkDeltas = [
-                makeCoords(0, 0),
-                makeCoords(0, 1),
-                makeCoords(1, 0),
-                makeCoords(1, 1)
-            ]
+        // loadVisibleChunks();
 
-            const chunk = getChunk(mainView.offset);
-
-            if (chunk !== currentChunk) {
-                currentChunk = chunk;
-
-                loadChunks(chunkDeltas.map(delta => addVectors(chunk, delta)))
-            }
-        }
-
-        loadVisibleChunks();
-
-        mainView.onOffsetUpdate = loadVisibleChunks;
+        mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
 
         document.addEventListener('keydown', event => {
             if (event.code === 'ArrowLeft') {
@@ -264,10 +214,7 @@ window.addEventListener(
         let originalOffset: { x: number, y: number }
 
         const showAllMines = () => {
-            // map.minePositions.forEach(position => {
-            //     map.map[position.y][position.x] = MINE_VALUE;
-            // })
-            minesVisible = true;
+            engine.minesVisible = true;
         }
 
         const openTile = (tileCoords: CoordsT) => {
@@ -280,7 +227,7 @@ window.addEventListener(
                     showAllMines();
                 }
 
-                loadVisibleChunks();
+                engine.loadVisibleChunks();
             } else if (val === HIDDEN_OVERFLOW) {
                 const q: CoordsT[] = [];
 
@@ -327,7 +274,7 @@ window.addEventListener(
                         this.setTimeout(()=>processTilesFromQueue(queue, num), 0);
                     }
 
-                    loadVisibleChunks();
+                    engine.loadVisibleChunks();
                 }
 
                 processTilesFromQueue(q, 1000);
@@ -379,7 +326,7 @@ window.addEventListener(
 
             map.toggleFlagAt(tile);
 
-            loadVisibleChunks();
+            engine.loadVisibleChunks();
         }
 
         canvas.addEventListener('mousedown', event => {
@@ -428,35 +375,44 @@ window.addEventListener(
             VScrollClickPos = undefined;
         })
 
+        
+        // const debounceWheel = (callback, wait) => {
+        //     let wheelSum = 0;
+        //     let timeoutId: number | undefined = undefined;
+        //     return (...args) => {
+        //     //   window.clearTimeout(timeoutId);
+        //         if (timeoutId !== undefined) {
+        //             wheelSum
+        //         }    
+
+        //         timeoutId = window.setTimeout(() => {
+        //             callback(wheelSum);
+        //             window.clearTimeout(timeoutId);
+        //         }, wait);
+        //     };
+        //   }
+
+        let scrollCoord = makeCoords(0, 0);
+        let scrollTimeoutId: number | undefined = undefined;
+
         canvas.addEventListener('wheel', event => {
-            mainView.updateOffset(makeCoords(event.deltaX, -event.deltaY));
+            if (scrollTimeoutId === undefined) {
+                scrollTimeoutId = window.setTimeout(() => {
+
+                    mainView.updateOffset(scrollCoord);
+                    scrollCoord = makeCoords(0, 0);
+                    window.clearTimeout(scrollTimeoutId);
+                    scrollTimeoutId = undefined;
+                }, 10)
+            }
+            scrollCoord = addVectors(scrollCoord, makeCoords(event.deltaX, -event.deltaY))
         })
 
-        const render = () => {
-            mainView.viewSize = {
-                x: canvas.clientWidth,
-                y: canvas.clientHeight
-            };
+        engine.loadVisibleChunks();
 
-            canvas.width = mainView.viewSize.x;
-            canvas.height = mainView.viewSize.y;
-            gl.viewport(0, 0, mainView.viewSize.x, mainView.viewSize.y);
+        // requestAnimationFrame(render);
 
-            setVec2FUniform(gl, program, "fullSize", [mainView.fullSize.x, mainView.fullSize.y]);
-            setVec2FUniform(gl, program, "viewSize", [mainView.viewSize.x, mainView.viewSize.y]);
-
-            setVec2FUniform(gl, program, "offset", [mainView.offset.x, mainView.offset.y]);
-            setVec2FUniform(gl, program, "matrixSize", [COLS, ROWS]);
-
-            setFUniform(gl, program, "minesVisible", minesVisible ? 1 : 0);
-
-            setFUniform(gl, program, "l", mainView.fullSize[0] / COLS);
-            gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);
-
-            requestAnimationFrame(render);
-        }
-
-        requestAnimationFrame(render);
+        this.requestAnimationFrame(() => engine.update());
 
         // gl.useProgram(null);
         // if (program) {
@@ -465,13 +421,3 @@ window.addEventListener(
     },
     false,
 );
-
-const setFUniform = (gl: WebGLRenderingContext, program: WebGLProgram, location: string, value: any) => {
-    const glLocation = gl.getUniformLocation(program, location);
-    gl.uniform1f(glLocation, value);
-}
-
-const setVec2FUniform = (gl: WebGLRenderingContext, program: WebGLProgram, location: string, value: any[]) => {
-    const glLocation = gl.getUniformLocation(program, location);
-    gl.uniform2fv(glLocation, value);
-}

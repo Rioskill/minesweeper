@@ -1,4 +1,4 @@
-import { CoordsT, makeCoords } from "./models";
+import { CoordsT, makeCoords, RectT } from "./models";
 
 export const clamp = (min: number, num: number, max: number) => {
     return Math.min(Math.max(num, min), max);
@@ -46,4 +46,12 @@ export const permutations = <T1, T2>(a: T1[], b: T2[]) => {
 
 export const randInt = (max: number) => {
     return Math.floor(Math.random() * (max));
+}
+
+export const getCollisionPos = (pos: CoordsT, rect: RectT) => {
+    return {
+        x: pos.x - rect.x,
+        y: pos.y - rect.y,
+        collision: pos.x > rect.x && pos.y > rect.y && pos.x < rect.x2 && pos.y < rect.y2
+    }
 }

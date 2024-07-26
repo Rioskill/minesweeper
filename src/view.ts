@@ -1,5 +1,5 @@
-import { CoordsT, makeCoords, RectT } from "./models"
-import { addVectors, clamp, clampCoords, substractVectors } from "./utils"
+import { CoordsT, makeCoords } from "./models"
+import { addVectors, clamp, clampCoords, getCollisionPos, substractVectors } from "./utils"
 
 interface MinesweeperViewProps {
     fullSize: CoordsT
@@ -9,14 +9,6 @@ interface MinesweeperViewProps {
     canvas: HTMLCanvasElement
 
     onOffsetUpdate?: () => void;
-}
-
-export const getCollisionPos = (pos: CoordsT, rect: RectT) => {
-    return {
-        x: pos.x - rect.x,
-        y: pos.y - rect.y,
-        collision: pos.x > rect.x && pos.y > rect.y && pos.x < rect.x2 && pos.y < rect.y2
-    }
 }
 
 export class MinesweeperView {
@@ -115,5 +107,15 @@ export class MinesweeperView {
 
     updateOffset(update: CoordsT) {
         this.setOffset(addVectors(this.offset, update));
+    }
+
+    updateViewSize() {
+        this.viewSize = {
+            x: this.canvas.clientWidth,
+            y: this.canvas.clientHeight
+        }
+
+        this.canvas.width = this.viewSize.x;
+        this.canvas.height = this.viewSize.y;
     }
 }

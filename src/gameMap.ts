@@ -187,4 +187,11 @@ export class GameMap {
             this.setFlagAt(tile);
         }
     }
+
+    getChunk(coords: CoordsT) {
+        return {
+            x: Math.floor(coords.x / this.COLL / this.CHUNKW),
+            y: Math.floor(coords.y / this.ROWL / this.CHUNKH)
+        }
+    }
 }
