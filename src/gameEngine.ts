@@ -75,7 +75,6 @@ export class GameEngine {
     processLeftClick(coords: CoordsT) {
         const collision = this.view.processScrollClick(coords);
 
-        console.log(collision)
         if (!collision) {
             const tile = this.getTileFromMouseCoords(coords)
 

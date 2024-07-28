@@ -35,138 +35,231 @@ const COLL = 50;
 const CHUNKW = 40;
 const CHUNKH = 40;
 
-window.addEventListener(
-    "load",
-    function setupWebGL(evt) {
-        console.log('setting up webGL')
-        // Cleaning after ourselves. The event handler removes
-        // itself, because it only needs to run once.
-        window.removeEventListener(evt.type, setupWebGL, false);
+type PageName = 'loading' | 'playing';
 
-        // References to the document elements.
-        const canvas = document.querySelector("canvas");
+type PageElement = {
+    tag: string,
+    class?: string
+    id?: string
+    children?: PageElement[]
+}
 
-        if (canvas === null) {
-            console.error('canvas is null');
+const createPage = (element: PageElement) => {
+    const el = document.createElement(element.tag);
+
+    if (element.class) {
+        el.className = element.class;
+    }
+
+    if (element.id) {
+        el.id = element.id;
+    }
+
+    element.children?.forEach(child => {
+        el.appendChild(createPage(child));
+    });
+
+    return el;
+}
+
+interface PageProps {
+    entryPoint: HTMLElement;
+    pages: { [key: string]: PageElement }
+}
+
+class PageSwitcher {
+    entryPoint: HTMLElement;
+    currentPage: PageName;
+    pages: { [key: string]: PageElement }
+
+    constructor(props: PageProps) {
+        this.currentPage = 'playing';
+        this.entryPoint = props.entryPoint;
+        this.pages = props.pages;
+    }
+
+    buildLayout() {
+        this.entryPoint.innerHTML = "";
+        this.entryPoint.appendChild(createPage(this.pages[this.currentPage]));
+    }
+
+    changePage(pageName: PageName) {
+        if (pageName === this.currentPage) {
             return;
         }
 
-        // Getting the WebGL rendering context.
+        this.currentPage = pageName;
+        this.buildLayout();
+    }
+}
 
-        /** @type {WebGLRenderingContext} */
-        const gl: WebGLRenderingContext | null = canvas.getContext("webgl");
+// window.addEventListener(
+//     "load",
+const setupWebGL = () => {
+    console.log('setting up webGL')
+    // Cleaning after ourselves. The event handler removes
+    // itself, because it only needs to run once.
+    // window.removeEventListener(evt.type, setupWebGL, false);
 
-        // If failed, inform user of failure. Otherwise, initialize
-        // the drawing buffer (the viewport) and clear the context
-        // with a solid color.
-        if (!gl) {
-            console.error('your browser does not support WebGL')
-            return;
+    // References to the document elements.
+    const canvas = document.querySelector("canvas");
+
+    if (canvas === null) {
+        console.error('canvas is null');
+        return;
+    }
+
+    // Getting the WebGL rendering context.
+
+    /** @type {WebGLRenderingContext} */
+    const gl: WebGLRenderingContext | null = canvas.getContext("webgl");
+
+    // If failed, inform user of failure. Otherwise, initialize
+    // the drawing buffer (the viewport) and clear the context
+    // with a solid color.
+    if (!gl) {
+        console.error('your browser does not support WebGL')
+        return;
+    }
+
+    const vSource = document.querySelector("#vertex-shader");
+
+    if (vSource === null) {
+        console.error('no vertex shader');
+        return;
+    }
+
+    const fSource = document.querySelector("#fragment-shader");
+
+    if (fSource === null) {
+        console.error('no fragment shader');
+        return;
+    }
+
+    const renderer = new GLRenderer({
+        gl: gl,
+        vertexShaderSource: vSource.innerHTML,
+        fragmenShaderSource: fSource.innerHTML
+    });
+
+    const map = new GameMap({
+        ROWS,
+        COLS,
+        ROWL,
+        COLL,
+        CHUNKH,
+        CHUNKW
+    });
+
+    map.generateMap(MINES);
+
+    console.log('map', map.map);
+    canvas.oncontextmenu = () => false;
+
+    const mainView = new MinesweeperView({
+        fullSize: {
+            x: COLL * COLS,
+            y: ROWL * ROWS
+        },
+        viewSize: {
+            x: canvas.clientWidth,
+            y: canvas.clientHeight
+        },
+        canvas: canvas
+    })
+
+    const engine = new GameEngine({
+        map: map,
+        view: mainView,
+        renderer: renderer
+    })
+
+    mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
+
+    document.addEventListener('keydown', event => {
+        if (event.code === 'ArrowLeft') {
+            mainView.updateOffset(makeCoords(-10, 0));
+        } else if (event.code === 'ArrowRight') {
+            mainView.updateOffset(makeCoords(10, 0));
+        } else if (event.code === 'ArrowDown') {
+            mainView.updateOffset(makeCoords(0, -10));
+        } else if (event.code === 'ArrowUp') {
+            mainView.updateOffset(makeCoords(0, 10));
         }
+    })
 
-        const vSource = document.querySelector("#vertex-shader");
+    window.addEventListener('resize', () => {
+        mainView.updateCanvasCoords();
+    })
 
-        if (vSource === null) {
-            console.error('no vertex shader');
-            return;
+    canvas.addEventListener('mousedown', event => {
+        const coords = {
+            x: event.clientX - mainView.canvasCoords.x,
+            y: event.clientY - mainView.canvasCoords.y
+        };
+
+        if (event.button === 0) {
+            engine.processLeftClick(coords);
+        } else if (event.button === 2) {
+            engine.processRightClick(coords);
         }
+    })
 
-        const fSource = document.querySelector("#fragment-shader");
+    window.addEventListener('mousemove', event => {
+        engine.processMouseMove(makeCoords(event.clientX, event.clientY));
+    })
 
-        if (fSource === null) {
-            console.error('no fragment shader');
-            return;
-        }
+    window.addEventListener('mouseup', () => {
+        engine.processMouseUp();
+    })
 
-        const renderer = new GLRenderer({
-            gl: gl,
-            vertexShaderSource: vSource.innerHTML,
-            fragmenShaderSource: fSource.innerHTML
-        });
+    canvas.addEventListener('wheel', event => {
+        engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
+    })
 
-        const map = new GameMap({
-            ROWS,
-            COLS,
-            ROWL,
-            COLL,
-            CHUNKH,
-            CHUNKW
-        });
+    engine.loadVisibleChunks();
 
-        map.generateMatrix(MINES);
+    requestAnimationFrame(() => engine.update());
 
-        console.log('map', map.map);
-        canvas.oncontextmenu = () => false;
+    // gl.useProgram(null);
+    // if (program) {
+    //   gl.deleteProgram(program);
+    // }
+}
+// },
+// false,
+// );
 
-        const mainView = new MinesweeperView({
-            fullSize: {
-                x: COLL * COLS,
-                y: ROWL * ROWS
-            },
-            viewSize: {
-                x: canvas.clientWidth,
-                y: canvas.clientHeight
-            },
-            canvas: canvas
-        })
+const main = () => {
+    const entryPoint = document.getElementById('main');
 
-        const engine = new GameEngine({
-            map: map,
-            view: mainView,
-            renderer: renderer
-        })
+    if (entryPoint === null) {
+        throw new Error('entrypoint not found');
+    }
 
-        mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
+    const pages = {
+        'playing': {
+            tag: 'div',
+            class: 'canvas-container',
+            children: [
+                {
+                    tag: 'canvas',
+                    id: 'canvas'
+                }
+            ]
+        },
+    }
 
-        document.addEventListener('keydown', event => {
-            if (event.code === 'ArrowLeft') {
-                mainView.updateOffset(makeCoords(-10, 0));
-            } else if (event.code === 'ArrowRight') {
-                mainView.updateOffset(makeCoords(10, 0));
-            } else if (event.code === 'ArrowDown') {
-                mainView.updateOffset(makeCoords(0, -10));
-            } else if (event.code === 'ArrowUp') {
-                mainView.updateOffset(makeCoords(0, 10));
-            }
-        })
+    const switcher = new PageSwitcher({
+        entryPoint,
+        pages: pages
+    });
 
-        window.addEventListener('resize', () => {
-            mainView.updateCanvasCoords();
-        })
+    switcher.buildLayout();
 
-        canvas.addEventListener('mousedown', event => {
-            const coords = {
-                x: event.clientX - mainView.canvasCoords.x,
-                y: event.clientY - mainView.canvasCoords.y
-            };
+    setupWebGL();
+}
 
-            if (event.button === 0) {
-                engine.processLeftClick(coords);
-            } else if (event.button === 2) {
-                engine.processRightClick(coords);
-            }
-        })
-
-        window.addEventListener('mousemove', event => {
-            engine.processMouseMove(makeCoords(event.clientX, event.clientY));
-        })
-
-        window.addEventListener('mouseup', () => {
-            engine.processMouseUp();
-        })
-
-        canvas.addEventListener('wheel', event => {
-            engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
-        })
-
-        engine.loadVisibleChunks();
-
-        this.requestAnimationFrame(() => engine.update());
-
-        // gl.useProgram(null);
-        // if (program) {
-        //   gl.deleteProgram(program);
-        // }
-    },
-    false,
-);
+window.addEventListener('load', () => {
+    main();
+})

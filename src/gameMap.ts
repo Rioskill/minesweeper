@@ -1,4 +1,5 @@
 import { MINE_VALUE, FLAG_OVERFLOW, HIDDEN_OVERFLOW } from "./consts";
+import { MapGenerator } from "./mapGeneration";
 import { CoordsT, makeCoords } from "./models";
 import { permutations, randInt, range } from "./utils";
 
@@ -36,54 +37,23 @@ export class GameMap {
         this.CHUNKH = props.CHUNKH;
     }
 
-    generateMatrix(mines: number) {
-        const rows = this.ROWS;
-        const cols = this.COLS;
-
-        const matrix = Array(rows).fill(0).map(() => Array(cols).fill(0));
-    
-        range(mines).forEach(i => {
-            let row = randInt(rows);
-            let col = randInt(cols);
-    
-            while (matrix[row][col] === MINE_VALUE) {
-                row = randInt(rows);
-                col = randInt(cols);
-            }
-    
-            matrix[row][col] = MINE_VALUE;
-            // this.minePositions.push(makeCoords(col, row));
+    generateMap(mines: number) {
+        const mapGenerator = new MapGenerator({
+            cols: this.COLS,
+            rows: this.ROWS,
+            mines
         })
-    
-        const hasBomb = (i: number, j: number) => {
-            if (i < 0 ||
-                i >= this.ROWS ||
-                j < 0 ||
-                j >= this.COLS) {
-                return false;
-            }
-    
-            return matrix[i][j] === MINE_VALUE;
-        }
-    
-        const calcValue = (y: number, x: number) => {
-            if (matrix[y][x] === MINE_VALUE) {
-                return MINE_VALUE;
-            }
-    
-            const indices = range(-1, 2);
-    
-            const bombCnt = permutations(indices, indices)
-                .filter(([i, j]) => !(i === 0 && j === 0))
-                .map(([i, j]) => (hasBomb(y + i, x + j) ? 1 : 0) as number)
-                .reduce((sum, n) => sum + n, 0)
-    
-            return bombCnt;
-        }
 
-        this.map = matrix.map((row, i) => row.map((_, j) => calcValue(i, j) + 100));
+        let prevPercent = 0;
+        const minPercentDiff = 2;
+        this.map = mapGenerator.generateMap(percent => {
+            if (Math.floor(percent) - prevPercent > minPercentDiff) {
+                prevPercent = Math.floor(percent);
+                console.log(percent);
+            }
+        })
     }
-    
+
     createVertexGridChunk (chunk: CoordsT) {
         const grid: number[] = [];
 

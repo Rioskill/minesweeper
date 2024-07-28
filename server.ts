@@ -1,15 +1,15 @@
-Bun.build({
-    entrypoints: ['src/index.ts'],
-    outdir: './build',
-})
-  
+const build = () => {
+    Bun.build({
+        entrypoints: ['src/index.ts', 'src/gameMapGeneratorWorker.ts'],
+        outdir: './build',
+    })
+}
+
+build();
 
 Bun.serve({
     fetch(req: Request): Response | Promise<Response> {
-        Bun.build({
-            entrypoints: ['src/index.ts'],
-            outdir: './build',
-        })
+        build();
 
         console.log(req.url)
 
