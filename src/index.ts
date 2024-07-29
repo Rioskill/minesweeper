@@ -12,21 +12,21 @@ import { MinesweeperView } from "./view";
 // const ROWS = 10000;
 // const COLS = 10000;
 
-const ROWS = 2000;
-const COLS = 2000;
+// const ROWS = 2000;
+// const COLS = 2000;
 
 
 // const ROWS = 1000;
 // const COLS = 1000;
 
-// const ROWS = 50;
-// const COLS = 50;
+const ROWS = 50;
+const COLS = 50;
 
 // const MINES = 10000000;
 
-const MINES = 400000;
+// const MINES = 400000;
 
-// const MINES = 50;
+const MINES = 200;
 
 // const MINES = 10;
 
@@ -38,7 +38,7 @@ const CHUNKH = 40;
 
 // window.addEventListener(
 //     "load",
-const setupWebGL = (canvas: HTMLCanvasElement) => {
+const setupWebGL = async (canvas: HTMLCanvasElement) => {
     console.log('setting up webGL')
     // Getting the WebGL rendering context.
 
@@ -50,24 +50,16 @@ const setupWebGL = (canvas: HTMLCanvasElement) => {
         return;
     }
 
-    const vSource = document.querySelector("#vertex-shader");
+    const vSourceP = fetch('/src/shaders/vertexShader.vs');
+    const fSourceP = fetch('/src/shaders/fragmentShader.fs');
 
-    if (vSource === null) {
-        console.error('no vertex shader');
-        return;
-    }
-
-    const fSource = document.querySelector("#fragment-shader");
-
-    if (fSource === null) {
-        console.error('no fragment shader');
-        return;
-    }
+    const vSource = await vSourceP.then(source => source.text());
+    const fSource = await fSourceP.then(source => source.text());
 
     const renderer = new GLRenderer({
         gl: gl,
-        vertexShaderSource: vSource.innerHTML,
-        fragmenShaderSource: fSource.innerHTML
+        vertexShaderSource: vSource,
+        fragmenShaderSource: fSource
     });
 
     return renderer;
@@ -258,13 +250,18 @@ const main = () => {
 
             map.map = data.value;
 
-            const renderer = setupWebGL(canvas)!;
+            setupWebGL(canvas).then(renderer => {
+                if (renderer === undefined) {
+                    throw new Error('no renderer');   
+                };
 
-            startGame({
-                canvas,
-                renderer,
-                map
-            });
+                startGame({
+                    canvas,
+                    renderer,
+                    map
+                });
+            })
+
         }
     }
 

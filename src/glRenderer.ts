@@ -2,7 +2,6 @@ import { GLBuffer } from "./buffer";
 import { GameMap } from "./gameMap";
 import { CoordsT } from "./models";
 import { loadTexture } from "./texture";
-import { MinesweeperView } from "./view";
 
 interface GLRendererProps {
     gl: WebGLRenderingContext
