@@ -10,8 +10,8 @@ interface GameMapProps {
     ROWL: number
     COLL: number
 
-    CHUNKW: number
-    CHUNKH: number
+    CHUNKW?: number
+    CHUNKH?: number
 }
 
 export class GameMap {
@@ -33,8 +33,13 @@ export class GameMap {
         this.ROWL = props.ROWL;
         this.COLL = props.COLL;
 
-        this.CHUNKW = props.CHUNKW;
-        this.CHUNKH = props.CHUNKH;
+        this.CHUNKW = props.CHUNKW || 0;
+        this.CHUNKH = props.CHUNKH || 0;
+    }
+
+    calcChunkSize(viewSize: CoordsT) {
+        this.CHUNKW = Math.floor(viewSize.x / this.COLL) + 1;
+        this.CHUNKH = Math.floor(viewSize.y / this.ROWL) + 1;
     }
 
     generateMap(mines: number) {

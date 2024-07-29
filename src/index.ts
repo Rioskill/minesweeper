@@ -45,9 +45,6 @@ const setupWebGL = (canvas: HTMLCanvasElement) => {
     /** @type {WebGLRenderingContext} */
     const gl: WebGLRenderingContext | null = canvas.getContext("webgl");
 
-    // If failed, inform user of failure. Otherwise, initialize
-    // the drawing buffer (the viewport) and clear the context
-    // with a solid color.
     if (!gl) {
         console.error('your browser does not support WebGL')
         return;
@@ -79,9 +76,6 @@ const setupWebGL = (canvas: HTMLCanvasElement) => {
     //   gl.deleteProgram(program);
     // }
 }
-// },
-// false,
-// );
 
 export type MapGeneratorData = {
     type: 'percent',
@@ -112,6 +106,8 @@ const startGame = ({canvas, map, renderer}: startGameProps) => {
         canvas: canvas
     })
 
+    map.calcChunkSize(mainView.viewSize);
+
     const engine = new GameEngine({
         map: map,
         view: mainView,
@@ -134,6 +130,8 @@ const startGame = ({canvas, map, renderer}: startGameProps) => {
 
     window.addEventListener('resize', () => {
         mainView.updateCanvasCoords();
+        map.calcChunkSize(mainView.viewSize);
+        engine.loadVisibleChunks();
     })
 
     canvas.addEventListener('mousedown', event => {
