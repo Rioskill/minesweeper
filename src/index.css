@@ -42,6 +42,25 @@ body {
     align-items: center;
 }
 
+.progressbar-container {
+    display: flex;
+    flex-direction: column;
+
+    align-items: flex-start;
+    justify-content: center;
+
+    gap: 10px;
+}
+
+.progressbar {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 5px;
+}
+
 canvas {
     width: 100%;
     height: 100%;

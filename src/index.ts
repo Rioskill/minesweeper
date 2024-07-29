@@ -4,6 +4,7 @@ import { GameEngine } from "./gameEngine";
 import { GameMap } from "./gameMap";
 import { GLRenderer } from "./glRenderer";
 import { CoordsT, makeCoords } from "./models";
+import { PageSwitcher } from "./pageElement";
 import { loadTexture } from "./texture";
 import { addVectors, permutations, randInt, range } from "./utils";
 import { MinesweeperView } from "./view";
@@ -35,80 +36,10 @@ const COLL = 50;
 const CHUNKW = 40;
 const CHUNKH = 40;
 
-type PageName = 'loading' | 'playing';
-
-type PageElement = {
-    tag: string,
-    class?: string
-    id?: string
-    children?: PageElement[]
-}
-
-const createPage = (element: PageElement) => {
-    const el = document.createElement(element.tag);
-
-    if (element.class) {
-        el.className = element.class;
-    }
-
-    if (element.id) {
-        el.id = element.id;
-    }
-
-    element.children?.forEach(child => {
-        el.appendChild(createPage(child));
-    });
-
-    return el;
-}
-
-interface PageProps {
-    entryPoint: HTMLElement;
-    pages: { [key: string]: PageElement }
-}
-
-class PageSwitcher {
-    entryPoint: HTMLElement;
-    currentPage: PageName;
-    pages: { [key: string]: PageElement }
-
-    constructor(props: PageProps) {
-        this.currentPage = 'playing';
-        this.entryPoint = props.entryPoint;
-        this.pages = props.pages;
-    }
-
-    buildLayout() {
-        this.entryPoint.innerHTML = "";
-        this.entryPoint.appendChild(createPage(this.pages[this.currentPage]));
-    }
-
-    changePage(pageName: PageName) {
-        if (pageName === this.currentPage) {
-            return;
-        }
-
-        this.currentPage = pageName;
-        this.buildLayout();
-    }
-}
-
 // window.addEventListener(
 //     "load",
-const setupWebGL = () => {
+const setupWebGL = (canvas: HTMLCanvasElement) => {
     console.log('setting up webGL')
-    // Cleaning after ourselves. The event handler removes
-    // itself, because it only needs to run once.
-    // window.removeEventListener(evt.type, setupWebGL, false);
-
-    // References to the document elements.
-    const canvas = document.querySelector("canvas");
-
-    if (canvas === null) {
-        console.error('canvas is null');
-        return;
-    }
-
     // Getting the WebGL rendering context.
 
     /** @type {WebGLRenderingContext} */
@@ -142,18 +73,31 @@ const setupWebGL = () => {
         fragmenShaderSource: fSource.innerHTML
     });
 
-    const map = new GameMap({
-        ROWS,
-        COLS,
-        ROWL,
-        COLL,
-        CHUNKH,
-        CHUNKW
-    });
+    return renderer;
+    // gl.useProgram(null);
+    // if (program) {
+    //   gl.deleteProgram(program);
+    // }
+}
+// },
+// false,
+// );
 
-    map.generateMap(MINES);
+export type MapGeneratorData = {
+    type: 'percent',
+    value: number
+} | {
+    type: 'result',
+    value: number[][]
+}
 
-    console.log('map', map.map);
+interface startGameProps {
+    canvas: HTMLCanvasElement
+    map: GameMap
+    renderer: GLRenderer
+}
+
+const startGame = ({canvas, map, renderer}: startGameProps) => {
     canvas.oncontextmenu = () => false;
 
     const mainView = new MinesweeperView({
@@ -220,15 +164,7 @@ const setupWebGL = () => {
     engine.loadVisibleChunks();
 
     requestAnimationFrame(() => engine.update());
-
-    // gl.useProgram(null);
-    // if (program) {
-    //   gl.deleteProgram(program);
-    // }
 }
-// },
-// false,
-// );
 
 const main = () => {
     const entryPoint = document.getElementById('main');
@@ -248,6 +184,30 @@ const main = () => {
                 }
             ]
         },
+        'loading': {
+            tag: 'div',
+            class: 'progressbar-container',
+            children: [
+                {
+                    tag: 'label',
+                    text: 'Generating map'
+                },
+                {
+                    tag: 'div',
+                    class: 'progressbar',
+                    children: [
+                        {
+                            tag: 'progress',
+                        },
+                        {
+                            tag: 'span',
+                            id: 'percent-indicator',
+                            text: '0%'
+                        }
+                    ]
+                }
+            ]
+        }
     }
 
     const switcher = new PageSwitcher({
@@ -257,9 +217,67 @@ const main = () => {
 
     switcher.buildLayout();
 
-    setupWebGL();
+    const progress = document.querySelector('progress');
+    const percentIndicator = document.getElementById('percent-indicator');
+
+    if (progress === null) {
+        throw new Error('no progress bar on page');
+    }
+
+    progress.max = 100;
+
+    if (percentIndicator === null) {
+        throw new Error('no percent indicator on page');
+    }
+
+    const mapGenerationWorker = new Worker('build/gameMapGeneratorWorker.js');
+
+    mapGenerationWorker.onmessage = (evt) => {
+        const data: MapGeneratorData = evt.data;
+
+        if (data.type === 'percent') {
+            const val = Math.floor(data.value);
+            progress.value = val;
+            percentIndicator.textContent = `${val}%`;
+        } else {
+            switcher.changePage('playing');
+            mapGenerationWorker.terminate();
+
+            const canvas = document.querySelector("canvas");
+
+            if (canvas === null) {
+                throw new Error('canvas is null');
+            }
+
+            const map = new GameMap({
+                ROWS,
+                COLS,
+                ROWL,
+                COLL,
+                CHUNKH,
+                CHUNKW
+            });
+
+            map.map = data.value;
+
+            const renderer = setupWebGL(canvas)!;
+
+            startGame({
+                canvas,
+                renderer,
+                map
+            });
+        }
+    }
+
+    mapGenerationWorker.postMessage({
+        cols: COLS,
+        rows: ROWS,
+        mines: MINES
+    });
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', function onLoadListener() {
+    window.removeEventListener('load', onLoadListener, false);
     main();
 })
