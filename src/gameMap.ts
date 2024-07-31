@@ -26,6 +26,11 @@ export class GameMap {
     CHUNKW: number
     CHUNKH: number
 
+    onMinesRemainingUpdate?: (minesRemaining: number)=>void
+
+    minesTotal: number
+    minesRemaining: number
+
     constructor(props: GameMapProps) {
         this.ROWS = props.ROWS;
         this.COLS = props.COLS;
@@ -35,6 +40,8 @@ export class GameMap {
 
         this.CHUNKW = props.CHUNKW || 0;
         this.CHUNKH = props.CHUNKH || 0;
+
+        this.minesRemaining = 0;
     }
 
     calcChunkSize(viewSize: CoordsT) {
@@ -43,6 +50,8 @@ export class GameMap {
     }
 
     generateMap(mines: number) {
+        this.minesTotal = mines;
+        this.minesRemaining = mines;
         const mapGenerator = new MapGenerator({
             cols: this.COLS,
             rows: this.ROWS,
@@ -136,10 +145,20 @@ export class GameMap {
 
     setFlagAt(tile: CoordsT) {
         this.map[tile.y][tile.x] += FLAG_OVERFLOW;
+
+        this.minesRemaining--;
+        if (this.onMinesRemainingUpdate) {
+            this.onMinesRemainingUpdate(this.minesRemaining);
+        }
     }
 
     removeFlagAt(tile: CoordsT) {
+        this.minesRemaining++;
         this.map[tile.y][tile.x] -= FLAG_OVERFLOW;
+
+        if (this.onMinesRemainingUpdate) {
+            this.onMinesRemainingUpdate(this.minesRemaining);
+        }
     }
 
     tileInBounds(coords: CoordsT) {
@@ -168,5 +187,9 @@ export class GameMap {
             x: Math.floor(coords.x / this.COLL / this.CHUNKW),
             y: Math.floor(coords.y / this.ROWL / this.CHUNKH)
         }
+    }
+
+    get tilesCnt() {
+        return this.ROWS * this.COLS;
     }
 }

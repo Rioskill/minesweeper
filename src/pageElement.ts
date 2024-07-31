@@ -7,6 +7,7 @@ export type PageElement = {
     value?: string | number
     text?: string
     children?: PageElement[]
+    params?: {[key: string]: any}
 }
 
 export const createPageElement = (element: PageElement) => {
@@ -21,11 +22,19 @@ export const createPageElement = (element: PageElement) => {
     }
 
     if (element.value) {
-        el.nodeValue = element.value.toString();
+        const val = element.value.toString();
+
+        const inputEl = el as HTMLInputElement;
+        inputEl.value = val;;
+        inputEl.setAttribute('value', val);
     }
 
     if (element.text) {
         el.textContent = element.text;
+    }
+
+    if (element.params) {
+        Object.entries(element.params).forEach(([key, value]) => el[key] = value);
     }
 
     element.children?.forEach(child => {

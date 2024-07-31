@@ -19,6 +19,11 @@ export class GameEngine {
     minesVisible: boolean
     currentBaseChunk: CoordsT
 
+    gameGoing: boolean
+    onGameOver: (status: 'win' | 'lose')=>void
+
+    openedTiles: number
+
     constructor(props: GameEngineProps) {
         this.map = props.map;
         this.view = props.view;
@@ -26,6 +31,16 @@ export class GameEngine {
 
         this.minesVisible = false;
         this.currentBaseChunk = makeCoords(0, 0);
+
+        this.gameGoing = true;
+
+        this.openedTiles = 0;
+    }
+
+    stopGame(status: 'win' | 'lose' = 'lose') {
+        this.gameGoing = false;
+        this.showAllMines();
+        this.onGameOver(status);
     }
 
     loadVisibleChunks() {
@@ -73,6 +88,10 @@ export class GameEngine {
     }
 
     processLeftClick(coords: CoordsT) {
+        if(!this.gameGoing) {
+            return;
+        }
+
         const collision = this.view.processScrollClick(coords);
 
         if (!collision) {
@@ -87,6 +106,10 @@ export class GameEngine {
     }
 
     processRightClick(coords: CoordsT) {
+        if(!this.gameGoing) {
+            return;
+        }
+
         const tile = this.getTileFromMouseCoords(coords);
 
         this.map.toggleFlagAt(tile);
@@ -94,16 +117,26 @@ export class GameEngine {
         this.loadVisibleChunks();
     }
 
+    updateOpenedTilesCnt(cnt: number = 1) {
+        this.openedTiles++;
+
+        if (this.openedTiles === this.map.tilesCnt - this.map.minesTotal) {
+            this.stopGame('win');
+        }
+    }
+
     openTile(tileCoords: CoordsT) {
         const val = this.map.getMapVal(tileCoords);
 
         if (this.map.isHidden(val) && val !== HIDDEN_OVERFLOW) {
             this.map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
-
+            
             if (this.map.getMapVal(tileCoords) === MINE_VALUE) {
-                this.showAllMines();
+                this.stopGame();
             }
-
+            
+            this.updateOpenedTilesCnt();
+            
             this.loadVisibleChunks();
         } else if (val === HIDDEN_OVERFLOW) {
             const q: CoordsT[] = [];
@@ -119,6 +152,7 @@ export class GameEngine {
 
             const processTile = (tileCoords: CoordsT) => {
                 this.map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
+                this.updateOpenedTilesCnt();
                 
                 if (this.map.map[tileCoords.y][tileCoords.x] > 0) {
                     return;

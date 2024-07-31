@@ -1,8 +1,10 @@
 import { GLBuffer } from "./buffer";
 import { MINE_VALUE, HIDDEN_OVERFLOW } from "./consts";
+import { displayBlock, setDisplayValue } from "./display/display";
 import { GameEngine } from "./gameEngine";
 import { GameMap } from "./gameMap";
 import { GLRenderer } from "./glRenderer";
+import { GameMenu } from "./menu";
 import { CoordsT, makeCoords } from "./models";
 import { PageSwitcher } from "./pageElement";
 import { loadTexture } from "./texture";
@@ -12,21 +14,22 @@ import { MinesweeperView } from "./view";
 // const ROWS = 10000;
 // const COLS = 10000;
 
+const ROWS = 10;
+const COLS = 10;
+
+const MINES = 3;
+
 // const ROWS = 2000;
 // const COLS = 2000;
 
-
-// const ROWS = 1000;
-// const COLS = 1000;
-
-const ROWS = 50;
-const COLS = 50;
+// const ROWS = 50;
+// const COLS = 50;
 
 // const MINES = 10000000;
 
 // const MINES = 400000;
 
-const MINES = 200;
+// const MINES = 200;
 
 // const MINES = 10;
 
@@ -36,18 +39,14 @@ const COLL = 50;
 const CHUNKW = 40;
 const CHUNKH = 40;
 
-// window.addEventListener(
-//     "load",
 const setupWebGL = async (canvas: HTMLCanvasElement) => {
-    console.log('setting up webGL')
     // Getting the WebGL rendering context.
 
     /** @type {WebGLRenderingContext} */
     const gl: WebGLRenderingContext | null = canvas.getContext("webgl");
 
     if (!gl) {
-        console.error('your browser does not support WebGL')
-        return;
+        throw new Error('your browser does not support WebGL');
     }
 
     const vSourceP = fetch('/src/shaders/vertexShader.vs');
@@ -77,38 +76,11 @@ export type MapGeneratorData = {
     value: number[][]
 }
 
-interface startGameProps {
-    canvas: HTMLCanvasElement
-    map: GameMap
-    renderer: GLRenderer
-}
+const setupEvents = (engine: GameEngine) => {
+    const mainView = engine.view;
+    const canvas = mainView.canvas;
 
-const startGame = ({canvas, map, renderer}: startGameProps) => {
-    canvas.oncontextmenu = () => false;
-
-    const mainView = new MinesweeperView({
-        fullSize: {
-            x: COLL * COLS,
-            y: ROWL * ROWS
-        },
-        viewSize: {
-            x: canvas.clientWidth,
-            y: canvas.clientHeight
-        },
-        canvas: canvas
-    })
-
-    map.calcChunkSize(mainView.viewSize);
-
-    const engine = new GameEngine({
-        map: map,
-        view: mainView,
-        renderer: renderer
-    })
-
-    mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
-
-    document.addEventListener('keydown', event => {
+    const keyDown = document.addEventListener('keydown', event => {
         if (event.code === 'ArrowLeft') {
             mainView.updateOffset(makeCoords(-10, 0));
         } else if (event.code === 'ArrowRight') {
@@ -120,13 +92,9 @@ const startGame = ({canvas, map, renderer}: startGameProps) => {
         }
     })
 
-    window.addEventListener('resize', () => {
-        mainView.updateCanvasCoords();
-        map.calcChunkSize(mainView.viewSize);
-        engine.loadVisibleChunks();
-    })
-
-    canvas.addEventListener('mousedown', event => {
+    const mouseDown = canvas.addEventListener('mousedown', event => {
+        console.log(engine.openedTiles)
+        
         const coords = {
             x: event.clientX - mainView.canvasCoords.x,
             y: event.clientY - mainView.canvasCoords.y
@@ -139,18 +107,35 @@ const startGame = ({canvas, map, renderer}: startGameProps) => {
         }
     })
 
-    window.addEventListener('mousemove', event => {
+    const mouseMove = window.addEventListener('mousemove', event => {
         engine.processMouseMove(makeCoords(event.clientX, event.clientY));
     })
 
-    window.addEventListener('mouseup', () => {
+    const mouseUp = window.addEventListener('mouseup', () => {
         engine.processMouseUp();
     })
 
-    canvas.addEventListener('wheel', event => {
+    const wheel = canvas.addEventListener('wheel', event => {
         engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
     })
 
+    const resize = window.addEventListener('resize', () => {
+        engine.view.updateCanvasCoords();
+        engine.map.calcChunkSize(engine.view.viewSize);
+        engine.loadVisibleChunks();
+    })
+
+    return {
+        'keydown': keyDown,
+        'mousedown': mouseDown,
+        'mousemove': mouseMove,
+        'mouseup': mouseUp,
+        'wheel': wheel,
+        'resize': resize
+    }
+}
+
+const startGame = (engine: GameEngine) => {
     engine.loadVisibleChunks();
 
     requestAnimationFrame(() => engine.update());
@@ -166,11 +151,38 @@ const main = () => {
     const pages = {
         'playing': {
             tag: 'div',
-            class: 'canvas-container',
+            class: 'main-container',
             children: [
                 {
-                    tag: 'canvas',
-                    id: 'canvas'
+                    tag: 'div',
+                    class: 'menu',
+                    children: [
+                        displayBlock('mines-cnt-display'),
+                        {
+                            tag: 'button',
+                            id: 'restart-btn',
+                            children: [
+                                {
+                                    tag: 'img',
+                                    params: {
+                                        src: 'textures/smiles/regular.png',
+                                        alt: 'you win. Restart'
+                                    }
+                                }
+                            ]
+                        },
+                        displayBlock('timer-display'),
+                    ]
+                },
+                {
+                    tag: 'div',
+                    class: 'canvas-container',
+                    children: [
+                        {
+                            tag: 'canvas',
+                            id: 'canvas'
+                        }
+                    ]
                 }
             ]
         },
@@ -231,6 +243,7 @@ const main = () => {
             percentIndicator.textContent = `${val}%`;
         } else {
             switcher.changePage('playing');
+
             mapGenerationWorker.terminate();
 
             const canvas = document.querySelector("canvas");
@@ -248,6 +261,25 @@ const main = () => {
                 CHUNKW
             });
 
+            map.minesRemaining = MINES;
+            map.minesTotal = MINES;
+
+            const timerDisplay = document.getElementById('timer-display');
+            const minesCntDisplay = document.getElementById('mines-cnt-display');
+            const restartBtn = document.getElementById('restart-btn');
+            
+            const menu = new GameMenu({
+                minesDisplay: minesCntDisplay!,
+                timerDisplay: timerDisplay!,
+                restartBtn: restartBtn!
+            });
+
+            menu.setMinesDisplayValue(map.minesRemaining);
+            menu.setTimerDisplayValue(0);
+            menu.startTimer();
+
+            map.onMinesRemainingUpdate = menu.setMinesDisplayValue.bind(menu);
+
             map.map = data.value;
 
             setupWebGL(canvas).then(renderer => {
@@ -255,11 +287,43 @@ const main = () => {
                     throw new Error('no renderer');   
                 };
 
-                startGame({
-                    canvas,
-                    renderer,
-                    map
-                });
+                canvas.oncontextmenu = () => false;
+
+                const mainView = new MinesweeperView({
+                    fullSize: {
+                        x: COLL * COLS,
+                        y: ROWL * ROWS
+                    },
+                    viewSize: {
+                        x: canvas.clientWidth,
+                        y: canvas.clientHeight
+                    },
+                    canvas: canvas
+                })
+            
+                map.calcChunkSize(mainView.viewSize);
+            
+                const engine = new GameEngine({
+                    map: map,
+                    view: mainView,
+                    renderer: renderer
+                })
+
+                mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
+
+                setupEvents(engine);
+
+                engine.onGameOver = (status) => {
+                    menu.stopTimer();
+
+                    if (status === 'win') {
+                        menu.setRestartBtnStatus('cool');
+                    } else {
+                        menu.setRestartBtnStatus('dead');
+                    }
+                }
+
+                startGame(engine);
             })
 
         }
