@@ -14,10 +14,10 @@ import { MinesweeperView } from "./view";
 // const ROWS = 10000;
 // const COLS = 10000;
 
-const ROWS = 10;
-const COLS = 10;
+// const ROWS = 9;
+// const COLS = 9;
 
-const MINES = 3;
+// const MINES = 3;
 
 // const ROWS = 2000;
 // const COLS = 2000;
@@ -33,11 +33,11 @@ const MINES = 3;
 
 // const MINES = 10;
 
-const ROWL = 50;
-const COLL = 50;
+// const ROWL = 50;
+// const COLL = 50;
 
-const CHUNKW = 40;
-const CHUNKH = 40;
+// const CHUNKW = 40;
+// const CHUNKH = 40;
 
 const setupWebGL = async (canvas: HTMLCanvasElement) => {
     // Getting the WebGL rendering context.
@@ -246,7 +246,11 @@ const main = () => {
 
             mapGenerationWorker.terminate();
 
-            const canvas = document.querySelector("canvas");
+            const canvasContainer = document.querySelector(".canvas-container") as HTMLElement;
+            const canvas = document.querySelector("canvas")!;
+
+            document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
+            document.documentElement.style.setProperty("--max-view-height", `${ROWL * ROWS + 14}px`);
 
             if (canvas === null) {
                 throw new Error('canvas is null');
