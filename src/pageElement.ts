@@ -1,6 +1,6 @@
-export type PageName = 'loading' | 'playing';
+export type PageName = 'loading' | 'playing' | 'mainMenu';
 
-export type PageElement = {
+export interface PageElement {
     tag: string,
     class?: string
     id?: string
@@ -8,6 +8,8 @@ export type PageElement = {
     text?: string
     children?: PageElement[]
     params?: {[key: string]: any}
+    onLoad?: (params: any)=>void
+    onUnload?: ()=>void
 }
 
 export const createPageElement = (element: PageElement) => {
@@ -25,7 +27,7 @@ export const createPageElement = (element: PageElement) => {
         const val = element.value.toString();
 
         const inputEl = el as HTMLInputElement;
-        inputEl.value = val;;
+        inputEl.value = val;
         inputEl.setAttribute('value', val);
     }
 
@@ -47,7 +49,7 @@ export const createPageElement = (element: PageElement) => {
 interface PageSwitcherProps {
     entryPoint: HTMLElement;
     pages: { [key: string]: PageElement }
-    initialPage?: PageName
+    initialPage: PageName
 }
 
 export class PageSwitcher {
@@ -56,22 +58,38 @@ export class PageSwitcher {
     pages: { [key: string]: PageElement }
 
     constructor(props: PageSwitcherProps) {
-        this.currentPage = props.initialPage || 'loading';
+        // this.currentPage = props.initialPage
         this.entryPoint = props.entryPoint;
         this.pages = props.pages;
+
+        if (props.initialPage) {
+            this.changePage(props.initialPage);
+        }
     }
 
     buildLayout() {
         this.entryPoint.innerHTML = "";
-        this.entryPoint.appendChild(createPageElement(this.pages[this.currentPage]));
+        const currentPage = this.pages[this.currentPage]
+        this.entryPoint.appendChild(createPageElement(currentPage));
     }
 
-    changePage(pageName: PageName) {
+    changePage(pageName: PageName, params?: any) {
         if (pageName === this.currentPage) {
             return;
         }
+        
+        const prevPage = this.pages[this.currentPage];
+        if (prevPage && prevPage.onUnload) {
+            prevPage.onUnload();
+        }
 
         this.currentPage = pageName;
+
         this.buildLayout();
+
+        const currentPage = this.pages[this.currentPage];
+        if (currentPage.onLoad) {
+            currentPage.onLoad(params);
+        }
     }
 }

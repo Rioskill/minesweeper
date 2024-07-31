@@ -6,7 +6,7 @@ import { GameMap } from "./gameMap";
 import { GLRenderer } from "./glRenderer";
 import { GameMenu } from "./menu";
 import { CoordsT, makeCoords } from "./models";
-import { PageSwitcher } from "./pageElement";
+import { PageElement, PageSwitcher } from "./pageElement";
 import { loadTexture } from "./texture";
 import { addVectors, permutations, randInt, range } from "./utils";
 import { MinesweeperView } from "./view";
@@ -33,11 +33,11 @@ import { MinesweeperView } from "./view";
 
 // const MINES = 10;
 
-// const ROWL = 50;
-// const COLL = 50;
+const ROWL = 50;
+const COLL = 50;
 
-// const CHUNKW = 40;
-// const CHUNKH = 40;
+const CHUNKW = 40;
+const CHUNKH = 40;
 
 const setupWebGL = async (canvas: HTMLCanvasElement) => {
     // Getting the WebGL rendering context.
@@ -141,6 +141,164 @@ const startGame = (engine: GameEngine) => {
     requestAnimationFrame(() => engine.update());
 }
 
+interface onLoadingLoadProps {
+    switcher: PageSwitcher,
+    ROWS: number
+    COLS: number
+    MINES: number
+}
+
+const onLoadingLoad = ({switcher, ROWS, COLS, MINES}: onLoadingLoadProps) => {
+    const progress = document.querySelector('progress');
+    const percentIndicator = document.getElementById('percent-indicator');
+
+    if (progress === null) {
+        throw new Error('no progress bar on page');
+    }
+
+    progress.max = 100;
+
+    if (percentIndicator === null) {
+        throw new Error('no percent indicator on page');
+    }
+
+    const mapGenerationWorker = new Worker('build/gameMapGeneratorWorker.js');
+
+    mapGenerationWorker.onmessage = (evt) => {
+        const data: MapGeneratorData = evt.data;
+
+        if (data.type === 'percent') {
+            const val = Math.floor(data.value);
+            progress.value = val;
+            percentIndicator.textContent = `${val}%`;
+        } else {
+            mapGenerationWorker.terminate();
+            
+            switcher.changePage('playing', {
+                ROWS,
+                COLS,
+                MINES,
+                mapData: data.value
+            });
+        }
+    }
+
+    mapGenerationWorker.postMessage({
+        cols: COLS,
+        rows: ROWS,
+        mines: MINES
+    });
+}
+
+interface onPlayingLoadProps extends onLoadingLoadProps {
+    mapData: number[][]
+}
+
+const onPlayingLoad = ({ROWS, COLS, MINES, mapData}: onPlayingLoadProps) => {
+    const canvasContainer = document.querySelector(".canvas-container") as HTMLElement;
+    const canvas = document.querySelector("canvas")!;
+
+    document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
+    document.documentElement.style.setProperty("--max-view-height", `${ROWL * ROWS + 14}px`);
+
+    if (canvas === null) {
+        throw new Error('canvas is null');
+    }
+
+    const map = new GameMap({
+        ROWS,
+        COLS,
+        ROWL,
+        COLL,
+        CHUNKH,
+        CHUNKW
+    });
+
+    map.minesRemaining = MINES;
+    map.minesTotal = MINES;
+
+    const timerDisplay = document.getElementById('timer-display');
+    const minesCntDisplay = document.getElementById('mines-cnt-display');
+    const restartBtn = document.getElementById('restart-btn');
+    
+    const menu = new GameMenu({
+        minesDisplay: minesCntDisplay!,
+        timerDisplay: timerDisplay!,
+        restartBtn: restartBtn!
+    });
+
+    menu.setMinesDisplayValue(map.minesRemaining);
+    menu.setTimerDisplayValue(0);
+    menu.startTimer();
+
+    map.onMinesRemainingUpdate = menu.setMinesDisplayValue.bind(menu);
+
+    // map.map = data.value;
+    map.map = mapData;
+
+    setupWebGL(canvas).then(renderer => {
+        if (renderer === undefined) {
+            throw new Error('no renderer');   
+        };
+
+        canvas.oncontextmenu = () => false;
+
+        const mainView = new MinesweeperView({
+            fullSize: {
+                x: COLL * COLS,
+                y: ROWL * ROWS
+            },
+            viewSize: {
+                x: canvas.clientWidth,
+                y: canvas.clientHeight
+            },
+            canvas: canvas
+        })
+    
+        map.calcChunkSize(mainView.viewSize);
+    
+        const engine = new GameEngine({
+            map: map,
+            view: mainView,
+            renderer: renderer
+        })
+
+        mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
+
+        setupEvents(engine);
+
+        engine.onGameOver = (status) => {
+            menu.stopTimer();
+
+            if (status === 'win') {
+                menu.setRestartBtnStatus('cool');
+            } else {
+                menu.setRestartBtnStatus('dead');
+            }
+        }
+
+        startGame(engine);
+    })
+}
+
+const numberInputBlock = (label: string, inputParams?: any): PageElement => ({
+    tag: 'div',
+    class: 'input-block',
+    children: [
+        {
+            tag: 'label',
+            text: label
+        },
+        {
+            tag: 'input',
+            params: {
+                'type': 'number',
+                ...inputParams
+            }
+        },
+    ]
+})
+
 const main = () => {
     const entryPoint = document.getElementById('main');
 
@@ -148,10 +306,36 @@ const main = () => {
         throw new Error('entrypoint not found');
     }
 
+    let cols = 9;
+    let rows = 9;
+    let mines = 3;
+
+    const colsInputOnChange = (ev) => {
+        cols = ev.target.value;
+        const minesInput = document.getElementById('mines-input') as HTMLInputElement;
+
+        minesInput.max = (rows * cols).toString();
+    }
+
+    const rowsInputOnchange = (ev) => {
+        rows = ev.target.value;
+        const minesInput = document.getElementById('mines-input') as HTMLInputElement;
+
+        minesInput.max = (rows * cols).toString();
+    }
+
+    const minesInputOnChange = (ev) => {
+        mines = ev.target.value;
+    }
+
+    let submitGameParams: (()=>void) | undefined = undefined;
+    const onSubmit = () => submitGameParams!();
+
     const pages = {
         'playing': {
             tag: 'div',
             class: 'main-container',
+            onLoad: onPlayingLoad,
             children: [
                 {
                     tag: 'div',
@@ -189,6 +373,7 @@ const main = () => {
         'loading': {
             tag: 'div',
             class: 'progressbar-container',
+            onLoad: onLoadingLoad,
             children: [
                 {
                     tag: 'label',
@@ -209,135 +394,91 @@ const main = () => {
                     ]
                 }
             ]
+        },
+        'mainMenu': {
+            tag: 'div',
+            class: 'main-menu',
+            children: [
+                {
+                    tag: 'div',
+                    class: 'main-menu__input-block',
+                    children: [
+                        numberInputBlock('cols', {
+                            id: 'cols-input',
+                            min: 9,
+                            value: 9,
+                            
+                        }),
+                        numberInputBlock('rows', {
+                            id: 'rows-input',
+                            min: 9,
+                            value: 9,
+                            
+                        }),
+                        numberInputBlock('mines', {
+                            id: 'mines-input',
+                            value: 3,
+                            min: 0,
+                            max: 81,
+                        }),
+                    ]
+                },
+                {
+                    tag: 'button',
+                    id: 'submit',
+                    text: 'Начать игру'
+                }
+            ],
+            onLoad: () => {
+                const colsInput = document.getElementById('cols-input');
+                const rowsInput = document.getElementById('rows-input');
+                const minesInput = document.getElementById('mines-input');
+                const submitBtn = document.getElementById('submit');
+
+                colsInput?.addEventListener('change', colsInputOnChange);
+                rowsInput?.addEventListener('change', rowsInputOnchange);
+
+                minesInput?.addEventListener('change', minesInputOnChange);
+
+                submitBtn?.addEventListener('click', onSubmit);
+            },
+            onUnload: () => {
+                const colsInput = document.getElementById('cols-input');
+                const rowsInput = document.getElementById('cols-input');
+                const minesInput = document.getElementById('mines-input');
+                const submitBtn = document.getElementById('submit');
+
+                colsInput?.removeEventListener('change', colsInputOnChange);
+                rowsInput?.removeEventListener('change', rowsInputOnchange);
+
+                minesInput?.removeEventListener('change', minesInputOnChange);
+
+                submitBtn?.removeEventListener('click', onSubmit);
+            }
         }
     }
 
     const switcher = new PageSwitcher({
         entryPoint,
-        pages: pages
+        pages: pages,
+        initialPage: 'mainMenu'
     });
 
-    switcher.buildLayout();
-
-    const progress = document.querySelector('progress');
-    const percentIndicator = document.getElementById('percent-indicator');
-
-    if (progress === null) {
-        throw new Error('no progress bar on page');
+    submitGameParams = () => {
+        console.log('submit', {
+            COLS: cols,
+            ROWS: rows,
+            MINES: mines,
+            switcher
+        })
+        switcher.changePage('loading', {
+            COLS: cols,
+            ROWS: rows,
+            MINES: mines,
+            switcher
+        })
     }
 
-    progress.max = 100;
-
-    if (percentIndicator === null) {
-        throw new Error('no percent indicator on page');
-    }
-
-    const mapGenerationWorker = new Worker('build/gameMapGeneratorWorker.js');
-
-    mapGenerationWorker.onmessage = (evt) => {
-        const data: MapGeneratorData = evt.data;
-
-        if (data.type === 'percent') {
-            const val = Math.floor(data.value);
-            progress.value = val;
-            percentIndicator.textContent = `${val}%`;
-        } else {
-            switcher.changePage('playing');
-
-            mapGenerationWorker.terminate();
-
-            const canvasContainer = document.querySelector(".canvas-container") as HTMLElement;
-            const canvas = document.querySelector("canvas")!;
-
-            document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
-            document.documentElement.style.setProperty("--max-view-height", `${ROWL * ROWS + 14}px`);
-
-            if (canvas === null) {
-                throw new Error('canvas is null');
-            }
-
-            const map = new GameMap({
-                ROWS,
-                COLS,
-                ROWL,
-                COLL,
-                CHUNKH,
-                CHUNKW
-            });
-
-            map.minesRemaining = MINES;
-            map.minesTotal = MINES;
-
-            const timerDisplay = document.getElementById('timer-display');
-            const minesCntDisplay = document.getElementById('mines-cnt-display');
-            const restartBtn = document.getElementById('restart-btn');
-            
-            const menu = new GameMenu({
-                minesDisplay: minesCntDisplay!,
-                timerDisplay: timerDisplay!,
-                restartBtn: restartBtn!
-            });
-
-            menu.setMinesDisplayValue(map.minesRemaining);
-            menu.setTimerDisplayValue(0);
-            menu.startTimer();
-
-            map.onMinesRemainingUpdate = menu.setMinesDisplayValue.bind(menu);
-
-            map.map = data.value;
-
-            setupWebGL(canvas).then(renderer => {
-                if (renderer === undefined) {
-                    throw new Error('no renderer');   
-                };
-
-                canvas.oncontextmenu = () => false;
-
-                const mainView = new MinesweeperView({
-                    fullSize: {
-                        x: COLL * COLS,
-                        y: ROWL * ROWS
-                    },
-                    viewSize: {
-                        x: canvas.clientWidth,
-                        y: canvas.clientHeight
-                    },
-                    canvas: canvas
-                })
-            
-                map.calcChunkSize(mainView.viewSize);
-            
-                const engine = new GameEngine({
-                    map: map,
-                    view: mainView,
-                    renderer: renderer
-                })
-
-                mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
-
-                setupEvents(engine);
-
-                engine.onGameOver = (status) => {
-                    menu.stopTimer();
-
-                    if (status === 'win') {
-                        menu.setRestartBtnStatus('cool');
-                    } else {
-                        menu.setRestartBtnStatus('dead');
-                    }
-                }
-
-                startGame(engine);
-            })
-
-        }
-    }
-
-    mapGenerationWorker.postMessage({
-        cols: COLS,
-        rows: ROWS,
-        mines: MINES
-    });
 }
 
 window.addEventListener('load', function onLoadListener() {
