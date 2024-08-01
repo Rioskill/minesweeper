@@ -71,6 +71,13 @@ export class GLRenderer {
         this.dataLength = 0;
     }
 
+    destruct() {
+        this.gl.useProgram(null);
+        if (this.program) {
+            this.gl.deleteProgram(this.program);
+        }
+    }
+
     compileShader(source: string, type: GLenum) {
         const shader = this.gl.createShader(type)!;
         this.gl.shaderSource(shader, source);

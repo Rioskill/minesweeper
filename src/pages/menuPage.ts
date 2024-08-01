@@ -94,28 +94,9 @@ export class MenuPage implements Page {
         this.events.forEach(({name, target, listener}) => {
             target.addEventListener(name, listener);
         });
-
-        // colsInput?.addEventListener('change', colsInputOnChange);
-        // rowsInput?.addEventListener('change', rowsInputOnchange);
-
-        // minesInput?.addEventListener('change', minesInputOnChange);
-
-        // submitBtn?.addEventListener('click', onSubmit);
     }
 
     onUnload() {
-        // const colsInput = document.getElementById('cols-input');
-        // const rowsInput = document.getElementById('cols-input');
-        // const minesInput = document.getElementById('mines-input');
-        // const submitBtn = document.getElementById('submit');
-
-        // colsInput?.removeEventListener('change', colsInputOnChange);
-        // rowsInput?.removeEventListener('change', rowsInputOnchange);
-
-        // minesInput?.removeEventListener('change', minesInputOnChange);
-
-        // submitBtn?.removeEventListener('click', onSubmit);
-
         this.events.forEach(({name, target, listener}) => {
             target.removeEventListener(name, listener);
         });

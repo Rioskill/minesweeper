@@ -8,6 +8,7 @@ import { GLRenderer } from "../glRenderer";
 import { MinesweeperView } from "../view";
 import { Page } from "../page";
 import { onLoadingLoadProps } from "./loadingPage";
+import { PageSwitcher } from "../pageElement";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
@@ -19,9 +20,13 @@ export class PlayingPage implements Page {
         listener: EventListener
     }}
 
-    setupEvents(engine: GameEngine) {
+    renderer: GLRenderer | undefined;
+
+    setupEvents(engine: GameEngine, {ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
         const mainView = engine.view;
         const canvas = mainView.canvas;
+
+        const btn = document.getElementById('restart-btn');
 
         this.events = {
             'keydown': {
@@ -78,64 +83,33 @@ export class PlayingPage implements Page {
                     engine.map.calcChunkSize(engine.view.viewSize);
                     engine.loadVisibleChunks();
                 }
+            },
+            'click': {
+                target: btn,
+                listener: () => {
+                    switcher.changePage('loading', {
+                        ROWS,
+                        COLS,
+                        MINES,
+                        switcher
+                    });
+                }
             }
         }
+
+        // const btn = document.getElementById('restart-btn');
+        // btn?.addEventListener('click', () => {
+        //     switcher.changePage('loading', {
+        //         ROWS,
+        //         COLS,
+        //         MINES,
+        //         switcher
+        //     });
+        // })
 
         Object.entries(this.events).forEach(([name, {target, listener}]) => {
             target.addEventListener(name, listener);
         })
-    
-        // const keyDown = document.addEventListener('keydown', event => {
-        //     if (event.code === 'ArrowLeft') {
-        //         mainView.updateOffset(makeCoords(-10, 0));
-        //     } else if (event.code === 'ArrowRight') {
-        //         mainView.updateOffset(makeCoords(10, 0));
-        //     } else if (event.code === 'ArrowDown') {
-        //         mainView.updateOffset(makeCoords(0, -10));
-        //     } else if (event.code === 'ArrowUp') {
-        //         mainView.updateOffset(makeCoords(0, 10));
-        //     }
-        // })
-    
-        // const mouseDown = canvas.addEventListener('mousedown', event => {
-        //     const coords = {
-        //         x: event.clientX - mainView.canvasCoords.x,
-        //         y: event.clientY - mainView.canvasCoords.y
-        //     };
-    
-        //     if (event.button === 0) {
-        //         engine.processLeftClick(coords);
-        //     } else if (event.button === 2) {
-        //         engine.processRightClick(coords);
-        //     }
-        // })
-    
-        // const mouseMove = window.addEventListener('mousemove', event => {
-        //     engine.processMouseMove(makeCoords(event.clientX, event.clientY));
-        // })
-    
-        // const mouseUp = window.addEventListener('mouseup', () => {
-        //     engine.processMouseUp();
-        // })
-    
-        // const wheel = canvas.addEventListener('wheel', event => {
-        //     engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
-        // })
-    
-        // const resize = window.addEventListener('resize', () => {
-        //     engine.view.updateCanvasCoords();
-        //     engine.map.calcChunkSize(engine.view.viewSize);
-        //     engine.loadVisibleChunks();
-        // })
-    
-        // this.events = {
-        //     'keydown': keyDown,
-        //     'mousedown': mouseDown,
-        //     'mousemove': mouseMove,
-        //     'mouseup': mouseUp,
-        //     'wheel': wheel,
-        //     'resize': resize
-        // }
     }
 
     async setupWebGL(canvas: HTMLCanvasElement) {
@@ -161,10 +135,6 @@ export class PlayingPage implements Page {
         });
     
         return renderer;
-        // gl.useProgram(null);
-        // if (program) {
-        //   gl.deleteProgram(program);
-        // }
     }
 
     onLoad({ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
@@ -173,16 +143,6 @@ export class PlayingPage implements Page {
     
         document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
         document.documentElement.style.setProperty("--max-view-height", `${ROWL * ROWS + 14}px`);
-    
-        const btn = document.getElementById('restart-btn');
-        btn?.addEventListener('click', () => {
-            switcher.changePage('loading', {
-                ROWS,
-                COLS,
-                MINES,
-                switcher
-            });
-        })
     
         if (canvas === null) {
             throw new Error('canvas is null');
@@ -223,6 +183,8 @@ export class PlayingPage implements Page {
             if (renderer === undefined) {
                 throw new Error('no renderer');   
             };
+
+
     
             canvas.oncontextmenu = () => false;
     
@@ -248,7 +210,13 @@ export class PlayingPage implements Page {
     
             mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
     
-            this.setupEvents(engine);
+            this.setupEvents(engine, {
+                ROWS,
+                COLS,
+                MINES,
+                mapData,
+                switcher
+            });
     
             engine.onGameOver = (status) => {
                 menu.stopTimer();
@@ -262,6 +230,18 @@ export class PlayingPage implements Page {
     
             this.startGame(engine);
         })
+    }
+
+
+    onUnload() {
+        Object.entries(this.events).forEach(([name, {target, listener}]) => {
+            target.removeEventListener(name, listener);
+        })
+
+        if (this.renderer) {
+            this.renderer.destruct();
+            this.renderer = undefined;
+        }
     }
 
     startGame(engine: GameEngine) {
