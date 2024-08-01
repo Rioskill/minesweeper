@@ -1,3 +1,5 @@
+import { Page } from "./page";
+
 export type PageName = 'loading' | 'playing' | 'mainMenu';
 
 export interface PageElement {
@@ -48,14 +50,15 @@ export const createPageElement = (element: PageElement) => {
 
 interface PageSwitcherProps {
     entryPoint: HTMLElement;
-    pages: { [key: string]: PageElement }
-    initialPage: PageName
+    pages: { [key: string]: Page }
+    initialPage?: PageName
+    initialParams?: any
 }
 
 export class PageSwitcher {
     entryPoint: HTMLElement;
     currentPage: PageName;
-    pages: { [key: string]: PageElement }
+    pages: { [key: string]: Page }
 
     constructor(props: PageSwitcherProps) {
         // this.currentPage = props.initialPage
@@ -63,14 +66,14 @@ export class PageSwitcher {
         this.pages = props.pages;
 
         if (props.initialPage) {
-            this.changePage(props.initialPage);
+            this.changePage(props.initialPage, props.initialParams);
         }
     }
 
     buildLayout() {
         this.entryPoint.innerHTML = "";
         const currentPage = this.pages[this.currentPage]
-        this.entryPoint.appendChild(createPageElement(currentPage));
+        this.entryPoint.appendChild(createPageElement(currentPage.render()));
     }
 
     changePage(pageName: PageName, params?: any) {
