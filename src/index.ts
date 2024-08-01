@@ -93,8 +93,6 @@ const setupEvents = (engine: GameEngine) => {
     })
 
     const mouseDown = canvas.addEventListener('mousedown', event => {
-        console.log(engine.openedTiles)
-        
         const coords = {
             x: event.clientX - mainView.canvasCoords.x,
             y: event.clientY - mainView.canvasCoords.y
@@ -171,15 +169,18 @@ const onLoadingLoad = ({switcher, ROWS, COLS, MINES}: onLoadingLoadProps) => {
             const val = Math.floor(data.value);
             progress.value = val;
             percentIndicator.textContent = `${val}%`;
-        } else {
+        } else if(data.type === 'result') {
             mapGenerationWorker.terminate();
             
             switcher.changePage('playing', {
                 ROWS,
                 COLS,
                 MINES,
-                mapData: data.value
+                mapData: data.value,
+                switcher
             });
+        } else {
+            console.log(data);
         }
     }
 
@@ -194,12 +195,22 @@ interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
 }
 
-const onPlayingLoad = ({ROWS, COLS, MINES, mapData}: onPlayingLoadProps) => {
+const onPlayingLoad = ({ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) => {
     const canvasContainer = document.querySelector(".canvas-container") as HTMLElement;
     const canvas = document.querySelector("canvas")!;
 
     document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
     document.documentElement.style.setProperty("--max-view-height", `${ROWL * ROWS + 14}px`);
+
+    const btn = document.getElementById('restart-btn');
+    btn?.addEventListener('click', () => {
+        switcher.changePage('loading', {
+            ROWS,
+            COLS,
+            MINES,
+            switcher
+        });
+    })
 
     if (canvas === null) {
         throw new Error('canvas is null');
@@ -311,21 +322,22 @@ const main = () => {
     let mines = 3;
 
     const colsInputOnChange = (ev) => {
-        cols = ev.target.value;
+        cols = parseInt(ev.target.value);
+        
         const minesInput = document.getElementById('mines-input') as HTMLInputElement;
 
         minesInput.max = (rows * cols).toString();
     }
 
     const rowsInputOnchange = (ev) => {
-        rows = ev.target.value;
+        rows = parseInt(ev.target.value);
         const minesInput = document.getElementById('mines-input') as HTMLInputElement;
 
         minesInput.max = (rows * cols).toString();
     }
 
     const minesInputOnChange = (ev) => {
-        mines = ev.target.value;
+        mines = parseInt(ev.target.value);
     }
 
     let submitGameParams: (()=>void) | undefined = undefined;
@@ -425,6 +437,7 @@ const main = () => {
                 },
                 {
                     tag: 'button',
+                    class: 'btn',
                     id: 'submit',
                     text: 'Начать игру'
                 }

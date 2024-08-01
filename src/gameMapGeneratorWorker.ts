@@ -6,9 +6,8 @@ interface StartMessageData {
     mines: number
 }
 
-onmessage = (ev: MessageEvent) => {
+onmessage = (ev: MessageEvent<StartMessageData>) => {
     const data: StartMessageData = ev.data;
-
     const generator = new MapGenerator(data);
 
     let prevPercent = 0;
