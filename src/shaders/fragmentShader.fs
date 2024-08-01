@@ -20,7 +20,7 @@ float width = 1. / 11.;
 float stroke = 2.;
 
 vec3 gridBorderColor = vec3(0.7);
-vec3 scrollbarColor = vec3(0., 1., 0);
+vec3 scrollbarColor = vec3(0.3);
 
 #define FLAG 1
 #define MINE 2
@@ -79,6 +79,10 @@ bool isClosed(float coordX) {
 }
 
 bool isScrollBar() {
+    if (viewSize == fullSize) {
+        return false;
+    }
+
     vec2 localPart = gl_FragCoord.xy / viewSize.xy;
 
     vec2 offsetPart = offset / fullSize;
@@ -109,8 +113,7 @@ void main()
 
     float pXPart = p.x / maxP.x;
 
-    if (isScrollBar())
-    {
+    if (isScrollBar()) {
         gl_FragColor = vec4(scrollbarColor, 1.);
         return;
     }

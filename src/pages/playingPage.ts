@@ -15,10 +15,11 @@ interface onPlayingLoadProps extends onLoadingLoadProps {
 }
 
 export class PlayingPage implements Page {
-    events: {[key: string]: {
+    events: {
+        name: string,
         target: any,
         listener: EventListener
-    }}
+    }[]
 
     renderer: GLRenderer | undefined;
 
@@ -28,8 +29,9 @@ export class PlayingPage implements Page {
 
         const btn = document.getElementById('restart-btn');
 
-        this.events = {
-            'keydown': {
+        this.events = [
+            {
+                name: 'keydown',
                 target: document,
                 listener: event => {
                     if (event.code === 'ArrowLeft') {
@@ -43,7 +45,8 @@ export class PlayingPage implements Page {
                     }
                 }
             },
-            'mousedown': {
+            {
+                name: 'mousedown',
                 target: canvas,
                 listener: event => {
                     const coords = {
@@ -58,25 +61,29 @@ export class PlayingPage implements Page {
                     }
                 }
             },
-            'mousemove': {
+            {
+                name: 'mousemove',
                 target: window,
                 listener: event => {
                     engine.processMouseMove(makeCoords(event.clientX, event.clientY));
                 }
             },
-            'mouseup': {
+            {
+                name: 'mouseup',
                 target: window,
                 listener: () => {
                     engine.processMouseUp();
                 }
             },
-            'wheel': {
+            {
+                name: 'wheel',
                 target: canvas,
                 listener: event => {
                     engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
                 }
             },
-            'resize': {
+            {
+                name: 'resize',
                 target: window,
                 listener: () => {
                     engine.view.updateCanvasCoords();
@@ -84,7 +91,8 @@ export class PlayingPage implements Page {
                     engine.loadVisibleChunks();
                 }
             },
-            'click': {
+            {
+                name: 'click',
                 target: btn,
                 listener: () => {
                     switcher.changePage('loading', {
@@ -95,19 +103,9 @@ export class PlayingPage implements Page {
                     });
                 }
             }
-        }
+        ]
 
-        // const btn = document.getElementById('restart-btn');
-        // btn?.addEventListener('click', () => {
-        //     switcher.changePage('loading', {
-        //         ROWS,
-        //         COLS,
-        //         MINES,
-        //         switcher
-        //     });
-        // })
-
-        Object.entries(this.events).forEach(([name, {target, listener}]) => {
+        this.events.forEach(({name, target, listener}) => {
             target.addEventListener(name, listener);
         })
     }
@@ -234,7 +232,7 @@ export class PlayingPage implements Page {
 
 
     onUnload() {
-        Object.entries(this.events).forEach(([name, {target, listener}]) => {
+        this.events.forEach(({name, target, listener}) => {
             target.removeEventListener(name, listener);
         })
 
