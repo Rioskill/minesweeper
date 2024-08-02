@@ -11,6 +11,7 @@ export class CanvasRenderer implements Renderer{
     ctx: CanvasRenderingContext2D
     img: HTMLImageElement
     cellW: number
+    stroke: number
 
     constructor(props: CanvasRendererProps) {
         this.ctx = props.ctx;
@@ -22,6 +23,8 @@ export class CanvasRenderer implements Renderer{
         })
 
         this.img.src = "/textures/digits.png";
+
+        this.stroke = 2;
     }
 
     updateOffset(map: GameMap, offset: CoordsT) {
@@ -29,20 +32,59 @@ export class CanvasRenderer implements Renderer{
     }
 
     drawCell(n: number, pos: CoordsT) {
-        this.ctx.drawImage(
-            this.img,                           // src
-            this.cellW * n, 0,                  // img coords
-            this.cellW, this.img.naturalHeight, // img size
-            pos.x, pos.y,                       // canvas coords
-            COLL, ROWL                          // size on canvas
+        const s = this.stroke / 2;
+  
+        if (n !== 0) {
+            this.ctx.drawImage(
+                this.img,                           // src
+                this.cellW * n, 0,                  // img coords
+                this.cellW, this.img.naturalHeight, // img size
+                pos.x, pos.y,                       // canvas coords
+                COLL , ROWL                         // size on canvas
+            );
+
+            this.ctx.lineWidth = this.stroke;
+            this.ctx.strokeStyle = "rgb(179, 179, 179)";
+
+            this.ctx.strokeRect(
+                pos.x + s, pos.y + s,
+                COLL - this.stroke, ROWL - this.stroke
+            );
+
+            return;
+        }
+
+        this.ctx.lineWidth = this.stroke;
+
+        this.ctx.fillStyle = "rgb(204, 196, 179)";
+        this.ctx.fillRect(
+            pos.x, pos.y,
+            COLL, ROWL
         );
+
+        
+        this.ctx.strokeStyle = "black";
+        this.ctx.beginPath();
+
+        this.ctx.moveTo(pos.x + s, pos.y + ROWL - s);
+        this.ctx.lineTo(pos.x + COLL - s, pos.y + ROWL - s);
+        this.ctx.lineTo(pos.x + COLL - s, pos.y + s);
+
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = "white";
+        this.ctx.beginPath();
+
+        this.ctx.moveTo(pos.x + COLL - s, pos.y + s);
+        this.ctx.lineTo(pos.x + s, pos.y + s);
+        this.ctx.lineTo(pos.x + s, pos.y + ROWL - s);
+
+        this.ctx.stroke();
     }
 
     render(props: RenderProps) {
         this.ctx.fillStyle="rgb(255, 0, 255)";
         this.ctx.fillRect(0, 0, props.viewSize.x, props.viewSize.y);
-
-        // this.drawCell(4, makeCoords(0, 0));
 
         const topLeft = {
             x: Math.floor(props.offset.x / COLL),
@@ -65,10 +107,6 @@ export class CanvasRenderer implements Renderer{
             return val;
         }
 
-        // console.log(topLeft, bottomRight)
-
-        // console.log(props.offset.y / ROWL)
-
         for(let i = topLeft.y; i < bottomRight.y; i++) {
             for(let j = topLeft.x; j < bottomRight.x; j++) {
                 const val = convertVal(props.map.map[i][j]);
@@ -77,8 +115,6 @@ export class CanvasRenderer implements Renderer{
                     x: j * COLL - props.offset.x,
                     y: props.viewSize.y - (i + 1) * ROWL + props.offset.y
                 }
-
-                // console.log(i, j)
 
                 this.drawCell(val, pos);
             }

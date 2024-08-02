@@ -33,7 +33,7 @@ export class MenuPage implements Page {
     constructor() {
         this.cols = 90;
         this.rows = 90;
-        this.mines = 4000;
+        this.mines = 1000;
     }
 
     onLoad(switcher: PageSwitcher) {
