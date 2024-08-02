@@ -4,11 +4,13 @@ import { GameMap } from "../gameMap";
 import { makeCoords } from "../models";
 import { COLL, ROWL, CHUNKW, CHUNKH } from "../consts";
 import { GameMenu } from "../menu";
-import { GLRenderer } from "../glRenderer";
+import { GLRenderer } from "../renderers/glRenderer";
 import { MinesweeperView } from "../view";
 import { Page } from "../page";
 import { onLoadingLoadProps } from "./loadingPage";
 import { PageSwitcher } from "../pageElement";
+import { CanvasRenderer } from "../renderers/canvasRenderer";
+import { Renderer } from "../renderers/models";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
@@ -21,13 +23,17 @@ export class PlayingPage implements Page {
         listener: EventListener
     }[]
 
-    renderer: GLRenderer | undefined;
+    engine: GameEngine | undefined;
+    renderer: Renderer | undefined;
 
     setupEvents(engine: GameEngine, {ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
         const mainView = engine.view;
         const canvas = mainView.canvas;
 
-        const btn = document.getElementById('restart-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        const glBtn = document.getElementById('gl-btn');
+        const canvasBtn = document.getElementById('canvas-btn');
 
         this.events = [
             {
@@ -88,12 +94,12 @@ export class PlayingPage implements Page {
                 listener: () => {
                     engine.view.updateCanvasCoords();
                     engine.map.calcChunkSize(engine.view.viewSize);
-                    engine.loadVisibleChunks();
+                    engine.updateOffset();
                 }
             },
             {
                 name: 'click',
-                target: btn,
+                target: restartBtn,
                 listener: () => {
                     switcher.changePage('loading', {
                         ROWS,
@@ -102,7 +108,21 @@ export class PlayingPage implements Page {
                         switcher
                     });
                 }
-            }
+            },
+            {
+                name: 'click',
+                target: glBtn,
+                listener: () => {
+                    this.setRenderer('gl');
+                }
+            },
+            {
+                name: 'click',
+                target: canvasBtn,
+                listener: () => {
+                    this.setRenderer('canvas');
+                }
+            },
         ]
 
         this.events.forEach(({name, target, listener}) => {
@@ -132,6 +152,20 @@ export class PlayingPage implements Page {
             fragmenShaderSource: fSource
         });
     
+        return renderer;
+    }
+
+    async setupCanvasRenderer(canvas: HTMLCanvasElement) {
+        const ctx: CanvasRenderingContext2D | null = canvas.getContext("2d");
+
+        if (!ctx) {
+            throw new Error("no 2d canvas context");
+        }
+
+        const renderer = new CanvasRenderer({
+            ctx
+        });
+
         return renderer;
     }
 
@@ -176,14 +210,14 @@ export class PlayingPage implements Page {
     
         // map.map = data.value;
         map.map = mapData;
+
+        const setupFunc: (canvas: HTMLCanvasElement)=>Promise<Renderer> = this.setupCanvasRenderer.bind(this);
     
-        this.setupWebGL(canvas).then(renderer => {
+        setupFunc(canvas).then(renderer => {
             if (renderer === undefined) {
                 throw new Error('no renderer');   
             };
 
-
-    
             canvas.oncontextmenu = () => false;
     
             const mainView = new MinesweeperView({
@@ -200,15 +234,15 @@ export class PlayingPage implements Page {
         
             map.calcChunkSize(mainView.viewSize);
         
-            const engine = new GameEngine({
+            this.engine = new GameEngine({
                 map: map,
                 view: mainView,
                 renderer: renderer
             })
     
-            mainView.onOffsetUpdate = () => engine.loadVisibleChunks();
+            mainView.onOffsetUpdate = () => this.engine!.updateOffset();
     
-            this.setupEvents(engine, {
+            this.setupEvents(this.engine, {
                 ROWS,
                 COLS,
                 MINES,
@@ -216,7 +250,7 @@ export class PlayingPage implements Page {
                 switcher
             });
     
-            engine.onGameOver = (status) => {
+            this.engine.onGameOver = (status) => {
                 menu.stopTimer();
     
                 if (status === 'win') {
@@ -226,10 +260,59 @@ export class PlayingPage implements Page {
                 }
             }
     
-            this.startGame(engine);
+            this.startGame(this.engine);
         })
     }
 
+    changeCanvas(): HTMLCanvasElement {
+        const origCanvas = this.engine!.view.canvas;
+        const newCanvas = origCanvas.cloneNode();
+
+        for(const event of this.events) {
+            if (event.target !== origCanvas) {
+                continue;
+            }
+
+            origCanvas.removeEventListener(event.name, event.listener);
+            event.target = newCanvas;
+            newCanvas.addEventListener(event.name, event.listener);
+        }
+
+        origCanvas.parentNode?.replaceChild(newCanvas, origCanvas);
+
+        const canvas = newCanvas as HTMLCanvasElement;
+        return canvas;
+    }
+
+    setRenderer(rendererName: 'gl' | 'canvas') {
+        if (this.engine === undefined) {
+            return;
+        }
+
+        const canvas = this.changeCanvas();
+
+        this.engine.view.canvas = canvas;
+
+        this.renderer?.destruct();
+
+        if (rendererName === 'gl') {
+            this.setupWebGL(canvas).then(renderer => {
+                this.renderer = renderer;
+                this.engine!.renderer = renderer;
+                this.engine?.updateOffset();
+            });
+            return;
+        }
+
+        if (rendererName === 'canvas') {
+            this.setupCanvasRenderer(canvas).then(renderer => {
+                this.renderer = renderer;
+                this.engine!.renderer = renderer;
+                this.engine?.updateOffset();
+            });
+            return;
+        }
+    }
 
     onUnload() {
         this.events.forEach(({name, target, listener}) => {
@@ -243,7 +326,7 @@ export class PlayingPage implements Page {
     }
 
     startGame(engine: GameEngine) {
-        engine.loadVisibleChunks();
+        engine.updateOffset();
     
         requestAnimationFrame(() => engine.update());
     }
@@ -255,32 +338,54 @@ export class PlayingPage implements Page {
             children: [
                 {
                     tag: 'div',
-                    class: 'menu',
+                    class: 'game-container',
                     children: [
-                        displayBlock('mines-cnt-display'),
                         {
-                            tag: 'button',
-                            id: 'restart-btn',
+                            tag: 'div',
+                            class: 'menu',
                             children: [
+                                displayBlock('mines-cnt-display'),
                                 {
-                                    tag: 'img',
-                                    params: {
-                                        src: 'textures/smiles/regular.png',
-                                        alt: 'you win. Restart'
-                                    }
-                                }
+                                    tag: 'button',
+                                    id: 'restart-btn',
+                                    children: [
+                                        {
+                                            tag: 'img',
+                                            params: {
+                                                src: 'textures/smiles/regular.png',
+                                                alt: 'you win. Restart'
+                                            }
+                                        }
+                                    ]
+                                },
+                                displayBlock('timer-display'),
                             ]
                         },
-                        displayBlock('timer-display'),
+                        {
+                            tag: 'div',
+                            class: 'canvas-container',
+                            children: [
+                                {
+                                    tag: 'canvas',
+                                    id: 'canvas'
+                                }
+                            ]
+                        }
                     ]
                 },
                 {
                     tag: 'div',
-                    class: 'canvas-container',
+                    class: 'options-container',
                     children: [
                         {
-                            tag: 'canvas',
-                            id: 'canvas'
+                            tag: 'button',
+                            id: 'gl-btn',
+                            text: 'webGL'
+                        },
+                        {
+                            tag: 'button',
+                            id: 'canvas-btn',
+                            text: 'canvas'
                         }
                     ]
                 }

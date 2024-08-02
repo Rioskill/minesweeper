@@ -1,23 +1,23 @@
 import { HIDDEN_OVERFLOW, MINE_VALUE } from "./consts";
 import { GameMap } from "./gameMap";
-import { GLRenderer } from "./glRenderer";
+import { GLRenderer } from "./renderers/glRenderer";
 import { CoordsT, makeCoords } from "./models";
 import { addVectors } from "./utils";
 import { MinesweeperView } from "./view";
+import { Renderer } from "./renderers/models";
 
 interface GameEngineProps {
     map: GameMap
     view: MinesweeperView
-    renderer: GLRenderer
+    renderer: Renderer
 }
 
 export class GameEngine {
     map: GameMap
     view: MinesweeperView
-    renderer: GLRenderer
+    renderer: Renderer
 
     minesVisible: boolean
-    currentBaseChunk: CoordsT
 
     gameGoing: boolean
     onGameOver: (status: 'win' | 'lose')=>void
@@ -30,7 +30,6 @@ export class GameEngine {
         this.renderer = props.renderer;
 
         this.minesVisible = false;
-        this.currentBaseChunk = makeCoords(0, 0);
 
         this.gameGoing = true;
 
@@ -43,24 +42,8 @@ export class GameEngine {
         this.onGameOver(status);
     }
 
-    loadVisibleChunks() {
-        const chunkDeltas = [
-            makeCoords(0, 0),
-            makeCoords(0, 1),
-            makeCoords(1, 0),
-            makeCoords(1, 1)
-        ]
-
-        const chunk = this.map.getChunk(this.view.offset);
-
-        if (chunk !== this.currentBaseChunk) {
-            this.currentBaseChunk = chunk;
-
-            this.renderer.loadChunks(
-                this.map,
-                chunkDeltas.map(delta => addVectors(chunk, delta))
-            )
-        }
+    updateOffset() {
+        this.renderer.updateOffset(this.map, this.view.offset);
     }
 
     update() {
@@ -75,6 +58,7 @@ export class GameEngine {
             COLS: this.map.COLS,
             ROWS: this.map.ROWS,
             minesVisible: this.minesVisible,
+            map: this.map,
         })
 
         requestAnimationFrame(() => this.update());
@@ -114,7 +98,7 @@ export class GameEngine {
 
         this.map.toggleFlagAt(tile);
 
-        this.loadVisibleChunks();
+        this.updateOffset();
     }
 
     updateOpenedTilesCnt(cnt: number = 1) {
@@ -137,7 +121,7 @@ export class GameEngine {
             
             this.updateOpenedTilesCnt();
             
-            this.loadVisibleChunks();
+            this.updateOffset();
         } else if (val === HIDDEN_OVERFLOW) {
             const q: CoordsT[] = [];
 
@@ -185,7 +169,7 @@ export class GameEngine {
                     setTimeout(()=>processTilesFromQueue(queue, num), 0);
                 }
 
-                this.loadVisibleChunks();
+                this.updateOffset();
             }
 
             processTilesFromQueue(q, 1000);

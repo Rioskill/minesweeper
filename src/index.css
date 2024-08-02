@@ -32,6 +32,14 @@ body {
 }
 
 .main-container {
+    display: flex;
+    flex-direction: row;
+
+    justify-content: space-between;
+    align-items: center;
+}
+
+.game-container {
     padding: 10px;
     background-color: var(--bg-color);
 
@@ -41,6 +49,18 @@ body {
         var(--border-gradient-black) 50%, 
         var(--border-gradient-white) 50%
     ) 1;
+}
+
+.options-container {
+    display: flex;
+
+    gap: 10px;
+
+    padding: 10px;
+}
+
+.options-container button {
+    padding: 10px;
 }
 
 .menu {

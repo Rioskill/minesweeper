@@ -1,7 +1,9 @@
-import { GLBuffer } from "./buffer";
-import { GameMap } from "./gameMap";
-import { CoordsT } from "./models";
-import { loadTexture } from "./texture";
+import { GLBuffer } from "../buffer";
+import { GameMap } from "../gameMap";
+import { CoordsT, makeCoords } from "../models";
+import { loadTexture } from "../texture";
+import { addVectors } from "../utils";
+import { Renderer, RenderProps } from "./models";
 
 interface GLRendererProps {
     gl: WebGLRenderingContext
@@ -10,7 +12,7 @@ interface GLRendererProps {
     fragmenShaderSource: string
 }
 
-export class GLRenderer {
+export class GLRenderer implements Renderer {
     vBuf: GLBuffer
     textureBuffer: GLBuffer
 
@@ -19,6 +21,8 @@ export class GLRenderer {
 
     gl: WebGLRenderingContext
     program: WebGLProgram
+
+    currentBaseChunk: CoordsT
 
     constructor(props: GLRendererProps) {
         this.gl = props.gl;
@@ -67,6 +71,8 @@ export class GLRenderer {
             type: this.gl.ARRAY_BUFFER,
             dataType: this.gl.FLOAT,
         })
+
+        this.currentBaseChunk = makeCoords(0, 0);
 
         this.dataLength = 0;
     }
@@ -136,6 +142,26 @@ export class GLRenderer {
         this.textureBuffer.setData(new Float32Array(textureCoords));
     }
 
+    updateOffset(map: GameMap, offset: CoordsT) {
+        const chunkDeltas = [
+            makeCoords(0, 0),
+            makeCoords(0, 1),
+            makeCoords(1, 0),
+            makeCoords(1, 1)
+        ]
+
+        const chunk = map.getChunk(offset);
+
+        if (chunk !== this.currentBaseChunk) {
+            this.currentBaseChunk = chunk;
+
+            this.loadChunks(
+                map,
+                chunkDeltas.map(delta => addVectors(chunk, delta))
+            )
+        }
+    }
+
     setFUniform(location: string, value: any) {
         const glLocation = this.gl.getUniformLocation(this.program, location);
         this.gl.uniform1f(glLocation, value);
@@ -160,18 +186,7 @@ export class GLRenderer {
         this.gl.uniform1i(samplerLocation, 0);
     }
 
-    render(props: {
-        viewportSize: CoordsT
-        fullSize: CoordsT
-        viewSize: CoordsT
-        offset: CoordsT
-        COLS: number
-        ROWS: number
-
-        minesVisible: boolean
-    }) {
-        // console.log('render')
-        // this.gl.viewport(0, 0, mainView.viewSize.x, mainView.viewSize.y);
+    render(props: RenderProps) {
         this.gl.viewport(0, 0, props.viewportSize.x, props.viewportSize.y);
 
         this.setVec2FUniform("fullSize", [props.fullSize.x, props.fullSize.y]);
@@ -184,7 +199,6 @@ export class GLRenderer {
 
         this.setFUniform("l", props.fullSize[0] / props.COLS);
 
-        // gl.drawArrays(gl.TRIANGLES, 0, dataArray.length / 2);
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.dataLength)
     }
 }
