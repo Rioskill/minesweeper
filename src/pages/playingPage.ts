@@ -26,6 +26,12 @@ export class PlayingPage implements Page {
     engine: GameEngine | undefined;
     renderer: Renderer | undefined;
 
+    shiftPressed: boolean;
+
+    constructor() {
+        this.shiftPressed = false;
+    }
+
     setupEvents(engine: GameEngine, {ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
         const mainView = engine.view;
         const canvas = mainView.canvas;
@@ -85,7 +91,11 @@ export class PlayingPage implements Page {
                 name: 'wheel',
                 target: canvas,
                 listener: event => {
-                    engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
+                    if (this.shiftPressed) {
+                        engine.processWheel(makeCoords(-event.deltaY, 0));
+                    } else {
+                        engine.processWheel(makeCoords(event.deltaX, -event.deltaY));
+                    }
                 }
             },
             {
@@ -123,6 +133,24 @@ export class PlayingPage implements Page {
                     this.setRenderer('canvas');
                 }
             },
+            {
+                name: 'keydown',
+                target: window,
+                listener: evt => {
+                    if (evt.code === 'ShiftLeft') {
+                        this.shiftPressed = true;
+                    }
+                }
+            },
+            {
+                name: 'keyup',
+                target: window,
+                listener: evt => {
+                    if (evt.code === 'ShiftLeft') {
+                        this.shiftPressed = false;
+                    }
+                }
+            }
         ]
 
         this.events.forEach(({name, target, listener}) => {
