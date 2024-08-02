@@ -31,28 +31,8 @@ export class CanvasRenderer implements Renderer{
 
     }
 
-    drawCell(n: number, pos: CoordsT) {
+    drawClosedTile(pos: CoordsT) {
         const s = this.stroke / 2;
-  
-        if (n !== 0) {
-            this.ctx.drawImage(
-                this.img,                           // src
-                this.cellW * n, 0,                  // img coords
-                this.cellW, this.img.naturalHeight, // img size
-                pos.x, pos.y,                       // canvas coords
-                COLL , ROWL                         // size on canvas
-            );
-
-            this.ctx.lineWidth = this.stroke;
-            this.ctx.strokeStyle = "rgb(179, 179, 179)";
-
-            this.ctx.strokeRect(
-                pos.x + s, pos.y + s,
-                COLL - this.stroke, ROWL - this.stroke
-            );
-
-            return;
-        }
 
         this.ctx.lineWidth = this.stroke;
 
@@ -82,6 +62,37 @@ export class CanvasRenderer implements Renderer{
         this.ctx.stroke();
     }
 
+    drawTile(n: number, pos: CoordsT) {
+        const s = this.stroke / 2;
+
+        if (n >= 100) {
+            this.drawClosedTile(pos);
+            if (n <= 110) {
+                return;
+            }
+            n = 9;
+        }
+
+        this.ctx.drawImage(
+            this.img,                           // src
+            this.cellW * n, 0,                  // img coords
+            this.cellW, this.img.naturalHeight, // img size
+            pos.x, pos.y,                       // canvas coords
+            COLL , ROWL                         // size on canvas
+        );
+
+        if (n !== 9) {
+            this.ctx.lineWidth = this.stroke;
+            this.ctx.strokeStyle = "rgb(179, 179, 179)";
+    
+            this.ctx.strokeRect(
+                pos.x + s, pos.y + s,
+                COLL - this.stroke, ROWL - this.stroke
+            );
+        }
+
+    }
+
     render(props: RenderProps) {
         this.ctx.fillStyle="rgb(255, 0, 255)";
         this.ctx.fillRect(0, 0, props.viewSize.x, props.viewSize.y);
@@ -96,27 +107,16 @@ export class CanvasRenderer implements Renderer{
             y: Math.min(Math.floor((props.offset.y + props.viewSize.y) / ROWL) + 1, props.ROWS)
         }
 
-        const convertVal = (val: number) => {
-            if (val >= 150) {
-                return val - 150;
-            }
-            if (val >= 100) {
-                return val - 100;
-            }
-
-            return val;
-        }
-
         for(let i = topLeft.y; i < bottomRight.y; i++) {
             for(let j = topLeft.x; j < bottomRight.x; j++) {
-                const val = convertVal(props.map.map[i][j]);
+                const val = props.map.map[i][j];
 
                 const pos = {
                     x: j * COLL - props.offset.x,
                     y: props.viewSize.y - (i + 1) * ROWL + props.offset.y
                 }
 
-                this.drawCell(val, pos);
+                this.drawTile(val, pos);
             }
         }
     }

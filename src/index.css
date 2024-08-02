@@ -83,7 +83,7 @@ body {
     display: flex;
 
     width: clamp(300px, 70vw, var(--max-view-width));
-    height: clamp(200px, 60vw, var(--max-view-height));
+    height: clamp(200px, 60vh, var(--max-view-height));
 
     overflow: hidden;
 
