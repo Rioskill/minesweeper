@@ -201,7 +201,6 @@ export class PlayingPage implements Page {
     }
 
     onLoad({ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
-        const canvasContainer = document.querySelector(".canvas-container") as HTMLElement;
         const canvas = document.querySelector("canvas")!;
     
         document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
@@ -297,7 +296,9 @@ export class PlayingPage implements Page {
 
     changeCanvas(): HTMLCanvasElement {
         const origCanvas = this.engine!.view.canvas;
-        const newCanvas = origCanvas.cloneNode();
+        const newCanvas = origCanvas.cloneNode() as HTMLCanvasElement;
+
+        newCanvas.oncontextmenu = () => false;
 
         for(const event of this.events) {
             if (event.target !== origCanvas) {

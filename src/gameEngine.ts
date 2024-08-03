@@ -51,9 +51,6 @@ export class GameEngine {
 
         this.renderer.render({
             viewportSize: this.view.viewSize,
-            // fullSize: this.view.fullSize,
-            // viewSize: this.view.viewSize,
-            // offset: this.view.offset,
 
             view: this.view,
 
@@ -74,13 +71,9 @@ export class GameEngine {
     }
 
     processLeftClick(coords: CoordsT) {
-        if(!this.gameGoing) {
-            return;
-        }
-
         const collision = this.view.processScrollClick(coords);
 
-        if (!collision) {
+        if (!collision && this.gameGoing) {
             const tile = this.getTileFromMouseCoords(coords)
 
             this.openTile(tile);

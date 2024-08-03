@@ -1,4 +1,4 @@
-import { COLL, ROWL } from "../consts";
+import { COLL, HIDDEN_OVERFLOW, MINE_VALUE, ROWL } from "../consts";
 import { GameMap } from "../gameMap";
 import { CoordsT, makeCoords } from "../models";
 import { Renderer, RenderProps } from "./models";
@@ -62,12 +62,16 @@ export class CanvasRenderer implements Renderer{
         this.ctx.stroke();
     }
 
-    drawTile(n: number, pos: CoordsT) {
+    drawTile(n: number, pos: CoordsT, minesVisible: boolean) {
         const s = this.stroke / 2;
 
-        if (n >= 100) {
+        if (n === HIDDEN_OVERFLOW + MINE_VALUE && minesVisible) {
+            n = MINE_VALUE;
+        }
+
+        if (n >= HIDDEN_OVERFLOW) {
             this.drawClosedTile(pos);
-            if (n <= 110) {
+            if (n <= HIDDEN_OVERFLOW + MINE_VALUE) {
                 return;
             }
             n = 9;
@@ -111,7 +115,7 @@ export class CanvasRenderer implements Renderer{
     }
 
     render(props: RenderProps) {
-        this.ctx.fillStyle="rgb(255, 0, 255)";
+        this.ctx.fillStyle = "rgb(204, 196, 179)"
         this.ctx.fillRect(0, 0, props.view.viewSize.x, props.view.viewSize.y);
 
         const topLeft = {
@@ -133,7 +137,7 @@ export class CanvasRenderer implements Renderer{
                     y: props.view.viewSize.y - (i + 1) * ROWL + props.view.offset.y
                 }
 
-                this.drawTile(val, pos);
+                this.drawTile(val, pos, props.minesVisible);
             }
         }
 
