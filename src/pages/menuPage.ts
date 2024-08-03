@@ -1,5 +1,5 @@
-import { Page } from "../page";
-import { PageElement, PageSwitcher } from "../pageElement";
+import { Page } from "./page";
+import { PageElement, PageSwitcher } from "./pageElement";
 
 const numberInputBlock = (label: string, inputParams?: any): PageElement => ({
     tag: 'div',

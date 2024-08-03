@@ -1,4 +1,4 @@
-import { PageSwitcher } from "./pageElement";
+import { PageSwitcher } from "./pages/pageElement";
 import { LoadingPage } from "./pages/loadingPage";
 import { MenuPage } from "./pages/menuPage";
 import { PlayingPage } from "./pages/playingPage";

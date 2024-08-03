@@ -7,16 +7,18 @@
     border: none;
 }
 
-html,
-body {
-    margin: 0;
-    padding: 0;
-
+:root {
     --border-gradient-black: rgb(80, 80, 80);
     --border-gradient-white: white;
     --border-gradient-size: 7px;
 
     --bg-color: rgb(204, 196, 179);
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
 }
 
 #main {
@@ -61,6 +63,13 @@ body {
 .game-container {
     padding: 10px;
     background-color: var(--bg-color);
+}
+
+.options-section {
+    display: flex;
+    flex-direction: column;
+
+    gap: 20px;
 }
 
 .options-container {

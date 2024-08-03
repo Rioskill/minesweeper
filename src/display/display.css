@@ -1,4 +1,4 @@
-:root {
+.s7s-container {
     --display-bg-color: none;
     --ia-color: #666;
     --a-color: rgb(219, 4, 4);
@@ -16,9 +16,7 @@
     --bar-h-t: calc(var(--bar-h)*2);
     --c-h-np: calc(var(--bar-p-t) + var(--bar-h-t));
     --c-h: calc(calc(var(--c-h-np) + var(--padding-p)) + var(--bar-pad));
-}
 
-.s7s-container {
     display: flex;
     background-color: black;
 }

@@ -6,11 +6,11 @@ import { COLL, ROWL, CHUNKW, CHUNKH } from "../consts";
 import { GameMenu } from "../menu";
 import { GLRenderer } from "../renderers/glRenderer";
 import { MinesweeperView } from "../view";
-import { Page } from "../page";
+import { Page } from "./page";
 import { onLoadingLoadProps } from "./loadingPage";
-import { PageSwitcher } from "../pageElement";
 import { CanvasRenderer } from "../renderers/canvasRenderer";
 import { Renderer } from "../renderers/models";
+import { theme } from "../themes";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
@@ -35,7 +35,7 @@ export class PlayingPage implements Page {
         this.shiftPressed = false;
     }
 
-    setupEvents(engine: GameEngine, {ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
+    setupEvents(engine: GameEngine, {ROWS, COLS, MINES, switcher}: onPlayingLoadProps) {
         const mainView = engine.view;
         const canvas = mainView.canvas;
 
@@ -43,6 +43,9 @@ export class PlayingPage implements Page {
 
         const glBtn = document.getElementById('gl-btn');
         const canvasBtn = document.getElementById('canvas-btn');
+
+        const themeMainBtn = document.getElementById('theme-main-btn');
+        const themeDarkBtn = document.getElementById('theme-dark-btn');
 
         this.events = [
             {
@@ -134,6 +137,20 @@ export class PlayingPage implements Page {
                 target: canvasBtn,
                 listener: () => {
                     this.setRenderer('canvas');
+                }
+            },
+            {
+                name: 'click',
+                target: themeMainBtn,
+                listener: () => {
+                    theme.setTheme('main');
+                }
+            },
+            {
+                name: 'click',
+                target: themeDarkBtn,
+                listener: () => {
+                    theme.setTheme('dark');
                 }
             },
             {
@@ -238,12 +255,11 @@ export class PlayingPage implements Page {
     
         map.onMinesRemainingUpdate = menu.setMinesDisplayValue.bind(menu);
     
-        // map.map = data.value;
         map.map = mapData;
 
-        const setupFunc: (canvas: HTMLCanvasElement)=>Promise<Renderer> = this.setupCanvasRenderer.bind(this);
-    
-        setupFunc(canvas).then(renderer => {
+        this.rendererType = 'gl';
+
+        this.setupWebGL(canvas).then(renderer => {
             if (renderer === undefined) {
                 throw new Error('no renderer');   
             };
@@ -428,24 +444,52 @@ export class PlayingPage implements Page {
                     ]
                 },
                 {
-                    tag: 'div',
-                    class: 'options-container bulging',
+                    tag: 'section',
+                    class: 'options-section',
                     children: [
                         {
-                            tag: 'h3',
-                            text: 'Renderer'
+                            tag: 'div',
+                            class: 'options-container bulging',
+                            children: [
+                                {
+                                    tag: 'h3',
+                                    text: 'Theme'
+                                },
+                                {
+                                    tag: 'button',
+                                    id: 'theme-main-btn',
+                                    text: 'main',
+                                    class: 'sunken',
+                                },
+                                {
+                                    tag: 'button',
+                                    id: 'theme-dark-btn',
+                                    text: 'dark',
+                                    class: 'bulging',
+                                }
+                            ]
                         },
                         {
-                            tag: 'button',
-                            id: 'gl-btn',
-                            text: 'webGL',
-                            class: 'bulging',
-                        },
-                        {
-                            tag: 'button',
-                            id: 'canvas-btn',
-                            text: 'canvas',
-                            class: 'sunken',
+                            tag: 'div',
+                            class: 'options-container bulging',
+                            children: [
+                                {
+                                    tag: 'h3',
+                                    text: 'Renderer'
+                                },
+                                {
+                                    tag: 'button',
+                                    id: 'gl-btn',
+                                    text: 'webGL',
+                                    class: 'sunken',
+                                },
+                                {
+                                    tag: 'button',
+                                    id: 'canvas-btn',
+                                    text: 'canvas',
+                                    class: 'bulging',
+                                }
+                            ]
                         }
                     ]
                 }

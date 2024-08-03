@@ -1,6 +1,6 @@
 import { MapGeneratorData } from ".."
-import { Page } from "../page"
-import { PageSwitcher } from "../pageElement"
+import { Page } from "./page"
+import { PageSwitcher } from "./pageElement"
 
 export interface onLoadingLoadProps {
     switcher: PageSwitcher,

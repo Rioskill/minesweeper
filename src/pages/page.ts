@@ -1,4 +1,4 @@
-import { PageElement, PageSwitcher } from "./pageElement";
+import { PageElement } from "./pageElement";
 
 export interface Page {
     render: () => PageElement

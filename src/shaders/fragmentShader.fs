@@ -5,22 +5,21 @@ uniform vec2 fullSize;
 uniform vec2 viewSize;
 
 uniform vec2 offset;
-uniform float l;
 uniform vec2 matrixSize;
 
 uniform float minesVisible;
 
 uniform sampler2D uSampler;
 
+uniform vec3 bgColor;
+uniform vec3 gridBorderColor;
+uniform vec3 scrollbarColor;
+
 varying vec2 pos;
-varying vec2 globalCoords;
 varying highp vec2 vTextureCoord;
 
 float width = 1. / 11.;
 float stroke = 2.;
-
-vec3 gridBorderColor = vec3(0.7);
-vec3 scrollbarColor = vec3(0.3);
 
 #define FLAG 1
 #define MINE 2
@@ -105,7 +104,8 @@ vec4 blendColors(vec3 first, vec3 second, float a) {
 
 void main()
 {   
-    vec4 closedColor = vec4(0.8, 0.77, 0.7, 1.);
+    // vec4 closedColor = vec4(0.8, 0.77, 0.7, 1.);
+    vec4 closedColor = vec4(bgColor / 255., 1.);
 
     vec2 p = fract(pos) * fullSize / matrixSize;
 
@@ -114,7 +114,7 @@ void main()
     float pXPart = p.x / maxP.x;
 
     if (isScrollBar()) {
-        gl_FragColor = vec4(scrollbarColor, 1.);
+        gl_FragColor = vec4(scrollbarColor / 255., 1.);
         return;
     }
 
@@ -132,7 +132,7 @@ void main()
                 gl_FragColor = vec4(vec3(0.), 1.);
             }
         } else {
-            gl_FragColor = vec4(gridBorderColor, 1.);
+            gl_FragColor = vec4(gridBorderColor / 255., 1.);
         } 
 
     } else {

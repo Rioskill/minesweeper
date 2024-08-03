@@ -1,6 +1,7 @@
-import { COLL, HIDDEN_OVERFLOW, MINE_VALUE, ROWL } from "../consts";
+import { COLL, HIDDEN_OVERFLOW, MINE_VALUE, ROWL} from "../consts";
 import { GameMap } from "../gameMap";
 import { CoordsT, makeCoords } from "../models";
+import { getStyleFromColor, theme, themes } from "../themes";
 import { Renderer, RenderProps } from "./models";
 
 interface CanvasRendererProps {
@@ -36,14 +37,13 @@ export class CanvasRenderer implements Renderer{
 
         this.ctx.lineWidth = this.stroke;
 
-        this.ctx.fillStyle = "rgb(204, 196, 179)";
+        this.ctx.fillStyle = theme.style.bgColor;
         this.ctx.fillRect(
             pos.x, pos.y,
             COLL, ROWL
         );
 
-        
-        this.ctx.strokeStyle = "black";
+        this.ctx.strokeStyle = theme.style.borderBlack;
         this.ctx.beginPath();
 
         this.ctx.moveTo(pos.x + s, pos.y + ROWL - s);
@@ -52,7 +52,7 @@ export class CanvasRenderer implements Renderer{
 
         this.ctx.stroke();
 
-        this.ctx.strokeStyle = "white";
+        this.ctx.strokeStyle = theme.style.borderWhite;
         this.ctx.beginPath();
 
         this.ctx.moveTo(pos.x + COLL - s, pos.y + s);
@@ -87,7 +87,7 @@ export class CanvasRenderer implements Renderer{
 
         if (n !== 9) {
             this.ctx.lineWidth = this.stroke;
-            this.ctx.strokeStyle = "rgb(179, 179, 179)";
+            this.ctx.strokeStyle = theme.style.gridBorderColor;
     
             this.ctx.strokeRect(
                 pos.x + s, pos.y + s,
@@ -101,7 +101,7 @@ export class CanvasRenderer implements Renderer{
         const HScrollCoords = props.view.HScrollCoords;
         const VScrollCoords = props.view.VScrollCoords;
         
-        this.ctx.fillStyle="rgb(77, 77, 77)";
+        this.ctx.fillStyle = theme.style.scrollbarColor;
 
         this.ctx.fillRect(
             HScrollCoords.x, HScrollCoords.y,
@@ -115,7 +115,7 @@ export class CanvasRenderer implements Renderer{
     }
 
     render(props: RenderProps) {
-        this.ctx.fillStyle = "rgb(204, 196, 179)"
+        this.ctx.fillStyle = theme.style.bgColor;
         this.ctx.fillRect(0, 0, props.view.viewSize.x, props.view.viewSize.y);
 
         const topLeft = {

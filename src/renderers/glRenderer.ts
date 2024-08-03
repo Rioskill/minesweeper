@@ -2,6 +2,7 @@ import { GLBuffer } from "../buffer";
 import { GameMap } from "../gameMap";
 import { CoordsT, makeCoords } from "../models";
 import { loadTexture } from "../texture";
+import { theme, themes } from "../themes";
 import { addVectors } from "../utils";
 import { Renderer, RenderProps } from "./models";
 
@@ -172,6 +173,11 @@ export class GLRenderer implements Renderer {
         this.gl.uniform2fv(glLocation, value);
     }
 
+    setVec3FUniform (location: string, value: number[]) {
+        const glLocation = this.gl.getUniformLocation(this.program, location);
+        this.gl.uniform3fv(glLocation, value);
+    }
+
     loadTexture(samplerLocation: WebGLUniformLocation, texturePath) {
         this.gl.pixelStorei(this.gl.UNPACK_FLIP_Y_WEBGL, true);
         const texture = loadTexture(this.gl, texturePath);
@@ -197,7 +203,9 @@ export class GLRenderer implements Renderer {
 
         this.setFUniform("minesVisible", props.minesVisible ? 1 : 0);
 
-        this.setFUniform("l", props.view.fullSize[0] / props.COLS);
+        this.setVec3FUniform("bgColor", theme.bgColor);
+        this.setVec3FUniform("gridBorderColor", theme.gridBorderColor);
+        this.setVec3FUniform("scrollbarColor", theme.scrollbarColor);
 
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.dataLength)
     }
