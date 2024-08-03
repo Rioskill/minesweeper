@@ -16,6 +16,8 @@ interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
 }
 
+type RendererType = 'gl' | 'canvas';
+
 export class PlayingPage implements Page {
     events: {
         name: string,
@@ -26,6 +28,7 @@ export class PlayingPage implements Page {
     engine: GameEngine | undefined;
     renderer: Renderer | undefined;
 
+    rendererType: RendererType;
     shiftPressed: boolean;
 
     constructor() {
@@ -312,8 +315,8 @@ export class PlayingPage implements Page {
         return canvas;
     }
 
-    setRenderer(rendererName: 'gl' | 'canvas') {
-        if (this.engine === undefined) {
+    setRenderer(rendererName: RendererType) {
+        if (this.engine === undefined || this.rendererType === rendererName) {
             return;
         }
 
@@ -323,11 +326,28 @@ export class PlayingPage implements Page {
 
         this.renderer?.destruct();
 
+        const glBtn = document.getElementById('gl-btn');
+        const canvasBtn = document.getElementById('canvas-btn');
+
+        const setSunken = (el: HTMLElement) => {
+            el.classList.remove('bulging');
+            el.classList.add('sunken');
+        }
+
+        const setBulging = (el: HTMLElement) => {
+            el.classList.remove('sunken');
+            el.classList.add('bulging');
+        }
+
         if (rendererName === 'gl') {
             this.setupWebGL(canvas).then(renderer => {
                 this.renderer = renderer;
+                this.rendererType = 'gl';
                 this.engine!.renderer = renderer;
                 this.engine?.updateOffset();
+
+                setSunken(glBtn!);
+                setBulging(canvasBtn!);
             });
             return;
         }
@@ -335,8 +355,12 @@ export class PlayingPage implements Page {
         if (rendererName === 'canvas') {
             this.setupCanvasRenderer(canvas).then(renderer => {
                 this.renderer = renderer;
+                this.rendererType = 'canvas';
                 this.engine!.renderer = renderer;
                 this.engine?.updateOffset();
+
+                setSunken(canvasBtn!);
+                setBulging(glBtn!);
             });
             return;
         }
@@ -366,16 +390,17 @@ export class PlayingPage implements Page {
             children: [
                 {
                     tag: 'div',
-                    class: 'game-container',
+                    class: 'game-container bulging',
                     children: [
                         {
                             tag: 'div',
-                            class: 'menu',
+                            class: 'menu sunken',
                             children: [
                                 displayBlock('mines-cnt-display'),
                                 {
                                     tag: 'button',
                                     id: 'restart-btn',
+                                    class: 'bulging',
                                     children: [
                                         {
                                             tag: 'img',
@@ -391,7 +416,7 @@ export class PlayingPage implements Page {
                         },
                         {
                             tag: 'div',
-                            class: 'canvas-container',
+                            class: 'canvas-container sunken',
                             children: [
                                 {
                                     tag: 'canvas',
@@ -403,17 +428,23 @@ export class PlayingPage implements Page {
                 },
                 {
                     tag: 'div',
-                    class: 'options-container',
+                    class: 'options-container bulging',
                     children: [
+                        {
+                            tag: 'h3',
+                            text: 'Renderer'
+                        },
                         {
                             tag: 'button',
                             id: 'gl-btn',
-                            text: 'webGL'
+                            text: 'webGL',
+                            class: 'bulging',
                         },
                         {
                             tag: 'button',
                             id: 'canvas-btn',
-                            text: 'canvas'
+                            text: 'canvas',
+                            class: 'sunken',
                         }
                     ]
                 }

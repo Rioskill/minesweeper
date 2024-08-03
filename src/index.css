@@ -35,14 +35,13 @@ body {
     display: flex;
     flex-direction: row;
 
+    gap: 20px;
+
     justify-content: space-between;
     align-items: center;
 }
 
-.game-container {
-    padding: 10px;
-    background-color: var(--bg-color);
-
+.bulging {
     border: var(--border-gradient-size) solid black;
     border-image: linear-gradient(
         to left top, 
@@ -51,12 +50,32 @@ body {
     ) 1;
 }
 
+.sunken {
+    border: var(--border-gradient-size) solid black;
+    border-image: linear-gradient(to right bottom, 
+        var(--border-gradient-black) 50%, 
+        var(--border-gradient-white) 50%
+    ) 1;
+}
+
+.game-container {
+    padding: 10px;
+    background-color: var(--bg-color);
+}
+
 .options-container {
-    display: flex;
+    display: grid;
 
     gap: 10px;
 
     padding: 10px;
+
+    grid-template-rows: repeat(2, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.options-container h3 {
+    grid-column: 1 / span 2;
 }
 
 .options-container button {
@@ -71,12 +90,6 @@ body {
 
     height: 20vh;
     background-color: var(--bg-color);
-
-    border: var(--border-gradient-size) solid black;
-    border-image: linear-gradient(to right bottom, 
-        var(--border-gradient-black) 50%, 
-        var(--border-gradient-white) 50%
-    ) 1;
 }
 
 .canvas-container {
@@ -89,12 +102,6 @@ body {
 
     justify-content: center;
     align-items: center;
-
-    border: var(--border-gradient-size) solid black;
-    border-image: linear-gradient(to right bottom, 
-        var(--border-gradient-black) 50%, 
-        var(--border-gradient-white) 50%
-    ) 1;
 }
 
 .progressbar-container {
@@ -123,13 +130,6 @@ canvas {
 
 #restart-btn {
     background-color: var(--bg-color);
-
-    border: var(--border-gradient-size) solid black;
-    border-image: linear-gradient(
-        to left top, 
-        var(--border-gradient-black) 50%, 
-        var(--border-gradient-white) 50%
-    ) 1;
 }
 
 #restart-btn img {
@@ -151,13 +151,6 @@ canvas {
     padding: 10px;
     background-color: var(--bg-color);
     color: white;;
-
-    border: var(--border-gradient-size) solid black;
-    border-image: linear-gradient(
-        to left top, 
-        var(--border-gradient-black) 50%, 
-        var(--border-gradient-white) 50%
-    ) 1;
 }
 
 .input-block {

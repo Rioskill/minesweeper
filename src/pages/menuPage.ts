@@ -133,7 +133,7 @@ export class MenuPage implements Page {
                 },
                 {
                     tag: 'button',
-                    class: 'btn',
+                    class: 'btn bulging',
                     id: 'submit',
                     text: 'Начать игру'
                 }
