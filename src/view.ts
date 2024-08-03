@@ -50,7 +50,7 @@ export class MinesweeperView {
     }
 
     get HScrollCoords() {
-        const x = this.offset.x / this.fullSize.x;
+        const x = this.offset.x / this.fullSize.x * this.viewSize.x;
         const y = this.viewSize.y - 10;
 
         const x2 = (this.offset.x + this.viewSize.x) / this.fullSize.x * this.viewSize.x;
@@ -68,7 +68,7 @@ export class MinesweeperView {
 
     get VScrollCoords() {
         const x = this.viewSize.x - 10;
-        const y2 = this.viewSize.y - this.offset.y / this.fullSize.y;
+        const y2 = this.viewSize.y - this.offset.y / this.fullSize.y * this.viewSize.y;
 
         const x2 = this.viewSize.x;
         const y = this.viewSize.y - (this.offset.y + this.viewSize.y) / this.fullSize.y * this.viewSize.y;

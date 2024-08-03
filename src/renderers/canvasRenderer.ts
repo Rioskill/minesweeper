@@ -93,18 +93,35 @@ export class CanvasRenderer implements Renderer{
 
     }
 
+    drawScrollbars(props: RenderProps) {
+        const HScrollCoords = props.view.HScrollCoords;
+        const VScrollCoords = props.view.VScrollCoords;
+        
+        this.ctx.fillStyle="rgb(77, 77, 77)";
+
+        this.ctx.fillRect(
+            HScrollCoords.x, HScrollCoords.y,
+            HScrollCoords.width, HScrollCoords.height
+        );
+
+        this.ctx.fillRect(
+            VScrollCoords.x, VScrollCoords.y,
+            VScrollCoords.width, VScrollCoords.height
+        );
+    }
+
     render(props: RenderProps) {
         this.ctx.fillStyle="rgb(255, 0, 255)";
-        this.ctx.fillRect(0, 0, props.viewSize.x, props.viewSize.y);
+        this.ctx.fillRect(0, 0, props.view.viewSize.x, props.view.viewSize.y);
 
         const topLeft = {
-            x: Math.floor(props.offset.x / COLL),
-            y: Math.floor((props.offset.y) / ROWL)
+            x: Math.floor(props.view.offset.x / COLL),
+            y: Math.floor((props.view.offset.y) / ROWL)
         };
 
         const bottomRight = {
-            x: Math.min(Math.floor((props.offset.x + props.viewSize.x) / COLL) + 1, props.COLS),
-            y: Math.min(Math.floor((props.offset.y + props.viewSize.y) / ROWL) + 1, props.ROWS)
+            x: Math.min(Math.floor((props.view.offset.x + props.view.viewSize.x) / COLL) + 1, props.COLS),
+            y: Math.min(Math.floor((props.view.offset.y + props.view.viewSize.y) / ROWL) + 1, props.ROWS)
         }
 
         for(let i = topLeft.y; i < bottomRight.y; i++) {
@@ -112,13 +129,15 @@ export class CanvasRenderer implements Renderer{
                 const val = props.map.map[i][j];
 
                 const pos = {
-                    x: j * COLL - props.offset.x,
-                    y: props.viewSize.y - (i + 1) * ROWL + props.offset.y
+                    x: j * COLL - props.view.offset.x,
+                    y: props.view.viewSize.y - (i + 1) * ROWL + props.view.offset.y
                 }
 
                 this.drawTile(val, pos);
             }
         }
+
+        this.drawScrollbars(props);
     }
 
     destruct() {

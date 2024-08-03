@@ -51,9 +51,11 @@ export class GameEngine {
 
         this.renderer.render({
             viewportSize: this.view.viewSize,
-            fullSize: this.view.fullSize,
-            viewSize: this.view.viewSize,
-            offset: this.view.offset,
+            // fullSize: this.view.fullSize,
+            // viewSize: this.view.viewSize,
+            // offset: this.view.offset,
+
+            view: this.view,
 
             COLS: this.map.COLS,
             ROWS: this.map.ROWS,

@@ -1,11 +1,13 @@
 import { GameMap } from "../gameMap"
 import { CoordsT } from "../models"
+import { MinesweeperView } from "../view"
 
 export interface RenderProps {
     viewportSize: CoordsT
-    fullSize: CoordsT
-    viewSize: CoordsT
-    offset: CoordsT
+    view: MinesweeperView
+    // fullSize: CoordsT
+    // viewSize: CoordsT
+    // offset: CoordsT
     COLS: number
     ROWS: number
 

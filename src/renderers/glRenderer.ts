@@ -189,15 +189,15 @@ export class GLRenderer implements Renderer {
     render(props: RenderProps) {
         this.gl.viewport(0, 0, props.viewportSize.x, props.viewportSize.y);
 
-        this.setVec2FUniform("fullSize", [props.fullSize.x, props.fullSize.y]);
-        this.setVec2FUniform("viewSize", [props.viewSize.x, props.viewSize.y]);
+        this.setVec2FUniform("fullSize", [props.view.fullSize.x, props.view.fullSize.y]);
+        this.setVec2FUniform("viewSize", [props.view.viewSize.x, props.view.viewSize.y]);
 
-        this.setVec2FUniform("offset", [props.offset.x, props.offset.y]);
+        this.setVec2FUniform("offset", [props.view.offset.x, props.view.offset.y]);
         this.setVec2FUniform("matrixSize", [props.COLS, props.ROWS]);
 
         this.setFUniform("minesVisible", props.minesVisible ? 1 : 0);
 
-        this.setFUniform("l", props.fullSize[0] / props.COLS);
+        this.setFUniform("l", props.view.fullSize[0] / props.COLS);
 
         this.gl.drawArrays(this.gl.TRIANGLES, 0, this.dataLength)
     }
