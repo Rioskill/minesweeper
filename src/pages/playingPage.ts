@@ -10,7 +10,8 @@ import { Page } from "./page";
 import { onLoadingLoadProps } from "./loadingPage";
 import { CanvasRenderer } from "../renderers/canvasRenderer";
 import { Renderer } from "../renderers/models";
-import { theme } from "../themes";
+import { theme, ThemeName } from "../themes";
+import { EventType, ToggleBtnBlock } from "./components";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
@@ -19,11 +20,7 @@ interface onPlayingLoadProps extends onLoadingLoadProps {
 type RendererType = 'gl' | 'canvas';
 
 export class PlayingPage implements Page {
-    events: {
-        name: string,
-        target: any,
-        listener: EventListener
-    }[]
+    events: EventType[]
 
     engine: GameEngine | undefined;
     renderer: Renderer | undefined;
@@ -31,8 +28,39 @@ export class PlayingPage implements Page {
     rendererType: RendererType;
     shiftPressed: boolean;
 
+    themeBtnBlock: ToggleBtnBlock<ThemeName>
+    rendererBtnBlock: ToggleBtnBlock<'gl' | 'canvas'>
+
     constructor() {
         this.shiftPressed = false;
+
+        this.rendererBtnBlock = new ToggleBtnBlock({
+            name: 'Renderer',
+            buttons: [
+                {
+                    id: 'gl'
+                },
+                {
+                    id: 'canvas'
+                }
+            ],
+            handler: this.setRenderer.bind(this),
+            defaultValue: 'gl',
+        })
+
+        this.themeBtnBlock = new ToggleBtnBlock({
+            name: 'Theme',
+            buttons: [
+                {
+                    id: 'main'
+                },
+                {
+                    id: 'dark'
+                }
+            ],
+            handler: (id: string) => theme.setTheme(id),
+            defaultValue: 'main'
+        })
     }
 
     setupEvents(engine: GameEngine, {ROWS, COLS, MINES, switcher}: onPlayingLoadProps) {
@@ -40,12 +68,6 @@ export class PlayingPage implements Page {
         const canvas = mainView.canvas;
 
         const restartBtn = document.getElementById('restart-btn');
-
-        const glBtn = document.getElementById('gl-btn');
-        const canvasBtn = document.getElementById('canvas-btn');
-
-        const themeMainBtn = document.getElementById('theme-main-btn');
-        const themeDarkBtn = document.getElementById('theme-dark-btn');
 
         this.events = [
             {
@@ -123,34 +145,6 @@ export class PlayingPage implements Page {
                         MINES,
                         switcher
                     });
-                }
-            },
-            {
-                name: 'click',
-                target: glBtn,
-                listener: () => {
-                    this.setRenderer('gl');
-                }
-            },
-            {
-                name: 'click',
-                target: canvasBtn,
-                listener: () => {
-                    this.setRenderer('canvas');
-                }
-            },
-            {
-                name: 'click',
-                target: themeMainBtn,
-                listener: () => {
-                    theme.setTheme('main');
-                }
-            },
-            {
-                name: 'click',
-                target: themeDarkBtn,
-                listener: () => {
-                    theme.setTheme('dark');
                 }
             },
             {
@@ -243,6 +237,9 @@ export class PlayingPage implements Page {
         const minesCntDisplay = document.getElementById('mines-cnt-display');
         const restartBtn = document.getElementById('restart-btn');
         
+        this.rendererBtnBlock.onLoad();
+        this.themeBtnBlock.onLoad();
+
         const menu = new GameMenu({
             minesDisplay: minesCntDisplay!,
             timerDisplay: timerDisplay!,
@@ -343,28 +340,12 @@ export class PlayingPage implements Page {
 
         this.renderer?.destruct();
 
-        const glBtn = document.getElementById('gl-btn');
-        const canvasBtn = document.getElementById('canvas-btn');
-
-        const setSunken = (el: HTMLElement) => {
-            el.classList.remove('bulging');
-            el.classList.add('sunken');
-        }
-
-        const setBulging = (el: HTMLElement) => {
-            el.classList.remove('sunken');
-            el.classList.add('bulging');
-        }
-
         if (rendererName === 'gl') {
             this.setupWebGL(canvas).then(renderer => {
                 this.renderer = renderer;
                 this.rendererType = 'gl';
                 this.engine!.renderer = renderer;
                 this.engine?.updateOffset();
-
-                setSunken(glBtn!);
-                setBulging(canvasBtn!);
             });
             return;
         }
@@ -375,9 +356,6 @@ export class PlayingPage implements Page {
                 this.rendererType = 'canvas';
                 this.engine!.renderer = renderer;
                 this.engine?.updateOffset();
-
-                setSunken(canvasBtn!);
-                setBulging(glBtn!);
             });
             return;
         }
@@ -392,6 +370,9 @@ export class PlayingPage implements Page {
             this.renderer.destruct();
             this.renderer = undefined;
         }
+
+        this.rendererBtnBlock.onUnload();
+        this.themeBtnBlock.onUnload();
     }
 
     startGame(engine: GameEngine) {
@@ -447,50 +428,8 @@ export class PlayingPage implements Page {
                     tag: 'section',
                     class: 'options-section',
                     children: [
-                        {
-                            tag: 'div',
-                            class: 'options-container bulging',
-                            children: [
-                                {
-                                    tag: 'h3',
-                                    text: 'Theme'
-                                },
-                                {
-                                    tag: 'button',
-                                    id: 'theme-main-btn',
-                                    text: 'main',
-                                    class: 'sunken btn',
-                                },
-                                {
-                                    tag: 'button',
-                                    id: 'theme-dark-btn',
-                                    text: 'dark',
-                                    class: 'bulging btn',
-                                }
-                            ]
-                        },
-                        {
-                            tag: 'div',
-                            class: 'options-container bulging',
-                            children: [
-                                {
-                                    tag: 'h3',
-                                    text: 'Renderer'
-                                },
-                                {
-                                    tag: 'button',
-                                    id: 'gl-btn',
-                                    text: 'webGL',
-                                    class: 'sunken btn',
-                                },
-                                {
-                                    tag: 'button',
-                                    id: 'canvas-btn',
-                                    text: 'canvas',
-                                    class: 'bulging btn',
-                                }
-                            ]
-                        }
+                        this.rendererBtnBlock.render(),
+                        this.themeBtnBlock.render()
                     ]
                 }
             ]

@@ -36,7 +36,7 @@ export const getStyleFromColor = ([r, g, b]: number[]) => {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-export type ThemeName = keyof typeof themes;
+export type ThemeName = keyof typeof themes & string;  // JS converts obj[1] to obj["1"], so ThemeName is actually number | string
 
 type ThemeChangesMediatorCallback = (props: {themeName: ThemeName, theme: ThemeType})=>void;
 

@@ -55,7 +55,8 @@ export class GLRenderer implements Renderer {
 
         this.gl.useProgram(this.program);
 
-        this.loadTexture(locations.sampler, "/textures/digits.png");
+        // load texture
+        this.onChangeTheme({themeName: theme.currentTheme});
 
         theme.mediator.subscribe('gl', this.onChangeTheme.bind(this));
 

@@ -31,7 +31,6 @@ export class CanvasRenderer implements Renderer{
     }
 
     onThemeChange({themeName}: {themeName: ThemeName}) {
-        console.log('on theme change', this.img, themeName)
         if (themeName === 'dark') {
             this.img.src = "/textures/dark_digits.png";
         } else {
