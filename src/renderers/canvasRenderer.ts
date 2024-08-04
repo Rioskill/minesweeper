@@ -1,7 +1,7 @@
 import { COLL, HIDDEN_OVERFLOW, MINE_VALUE, ROWL} from "../consts";
 import { GameMap } from "../gameMap";
 import { CoordsT, makeCoords } from "../models";
-import { getStyleFromColor, theme, themes } from "../themes";
+import { getStyleFromColor, theme, ThemeName, themes } from "../themes";
 import { Renderer, RenderProps } from "./models";
 
 interface CanvasRendererProps {
@@ -23,9 +23,20 @@ export class CanvasRenderer implements Renderer{
             this.cellW = this.img.naturalWidth / 11;
         })
 
-        this.img.src = "/textures/digits.png";
+        this.onThemeChange({themeName: theme.currentTheme});
+
+        theme.mediator.subscribe('canvas', this.onThemeChange.bind(this));
 
         this.stroke = 2;
+    }
+
+    onThemeChange({themeName}: {themeName: ThemeName}) {
+        console.log('on theme change', this.img, themeName)
+        if (themeName === 'dark') {
+            this.img.src = "/textures/dark_digits.png";
+        } else {
+            this.img.src = "/textures/digits.png";
+        }
     }
 
     updateOffset(map: GameMap, offset: CoordsT) {
@@ -103,15 +114,19 @@ export class CanvasRenderer implements Renderer{
         
         this.ctx.fillStyle = theme.style.scrollbarColor;
 
-        this.ctx.fillRect(
-            HScrollCoords.x, HScrollCoords.y,
-            HScrollCoords.width, HScrollCoords.height
-        );
+        if (HScrollCoords.width < props.view.viewSize.x) {
+            this.ctx.fillRect(
+                HScrollCoords.x, HScrollCoords.y,
+                HScrollCoords.width, HScrollCoords.height
+            );
+        }
 
-        this.ctx.fillRect(
-            VScrollCoords.x, VScrollCoords.y,
-            VScrollCoords.width, VScrollCoords.height
-        );
+        if (VScrollCoords.height < props.view.viewSize.y) {
+            this.ctx.fillRect(
+                VScrollCoords.x, VScrollCoords.y,
+                VScrollCoords.width, VScrollCoords.height
+            );
+        }
     }
 
     render(props: RenderProps) {

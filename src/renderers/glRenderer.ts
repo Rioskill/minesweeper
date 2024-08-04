@@ -2,7 +2,7 @@ import { GLBuffer } from "../buffer";
 import { GameMap } from "../gameMap";
 import { CoordsT, makeCoords } from "../models";
 import { loadTexture } from "../texture";
-import { theme, themes } from "../themes";
+import { theme, ThemeName, themes } from "../themes";
 import { addVectors } from "../utils";
 import { Renderer, RenderProps } from "./models";
 
@@ -57,6 +57,8 @@ export class GLRenderer implements Renderer {
 
         this.loadTexture(locations.sampler, "/textures/digits.png");
 
+        theme.mediator.subscribe('gl', this.onChangeTheme.bind(this));
+
         this.vBuf = new GLBuffer({
             gl: this.gl,
             location: locations.vertexCoords,
@@ -76,6 +78,16 @@ export class GLRenderer implements Renderer {
         this.currentBaseChunk = makeCoords(0, 0);
 
         this.dataLength = 0;
+    }
+
+    onChangeTheme({themeName}: {themeName: ThemeName}) {
+        const samplerLocation = this.gl.getUniformLocation(this.program, "uSampler")!;
+
+        if (themeName === 'dark') {
+            this.loadTexture(samplerLocation, "/textures/dark_digits.png");
+        } else {
+            this.loadTexture(samplerLocation, "/textures/digits.png");
+        }
     }
 
     destruct() {
@@ -206,7 +218,9 @@ export class GLRenderer implements Renderer {
         this.setVec3FUniform("bgColor", theme.bgColor);
         this.setVec3FUniform("gridBorderColor", theme.gridBorderColor);
         this.setVec3FUniform("scrollbarColor", theme.scrollbarColor);
+        this.setVec3FUniform("borderBlack", theme.borderBlack);
+        this.setVec3FUniform("borderWhite", theme.borderWhite);
 
-        this.gl.drawArrays(this.gl.TRIANGLES, 0, this.dataLength)
+        this.gl.drawArrays(this.gl.TRIANGLES, 0, this.dataLength / 2);
     }
 }

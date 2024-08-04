@@ -31,9 +31,9 @@ export class MenuPage implements Page {
     mines: number
 
     constructor() {
-        this.cols = 90;
-        this.rows = 90;
-        this.mines = 1000;
+        this.cols = 9;
+        this.rows = 9;
+        this.mines = 9;
     }
 
     onLoad(switcher: PageSwitcher) {
@@ -133,7 +133,7 @@ export class MenuPage implements Page {
                 },
                 {
                     tag: 'button',
-                    class: 'btn bulging',
+                    class: 'btn filled bulging',
                     id: 'submit',
                     text: 'Начать игру'
                 }

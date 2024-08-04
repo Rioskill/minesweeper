@@ -15,6 +15,9 @@ uniform vec3 bgColor;
 uniform vec3 gridBorderColor;
 uniform vec3 scrollbarColor;
 
+uniform vec3 borderBlack;
+uniform vec3 borderWhite;
+
 varying vec2 pos;
 varying highp vec2 vTextureCoord;
 
@@ -126,10 +129,10 @@ void main()
             // make shadows for 3d illusion
             // top left is white
             if (p.x < stroke || p.y > maxP.x - stroke) {
-                gl_FragColor = vec4(1.);
+                gl_FragColor = vec4(borderWhite / 255., 1.);
             // bottom right is black
             } else {
-                gl_FragColor = vec4(vec3(0.), 1.);
+                gl_FragColor = vec4(borderBlack / 255., 1.);
             }
         } else {
             gl_FragColor = vec4(gridBorderColor / 255., 1.);

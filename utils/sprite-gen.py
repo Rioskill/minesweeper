@@ -29,8 +29,12 @@ def replaceBg(img, color):
 
     return img
 
-def gen_sprite():
-    image = Image.new("RGBA", (WIDTH * CNT, FONTSIZE), (255,255,255))
+def invert_color(color):
+    return (255 - color[0], 255 - color[1], 255 - color[2])
+
+def gen_sprite(dark=False):
+    bg_color = (30, 30, 30) if dark else (255, 255, 255) 
+    image = Image.new("RGBA", (WIDTH * CNT, FONTSIZE), bg_color)
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype("resources/Tiny5-Regular.ttf", FONTSIZE)
 
@@ -40,7 +44,8 @@ def gen_sprite():
         draw.text((x + (WIDTH - w) / 2, 0), symbol, color, font=font)
 
     for i in range(1, 9):
-        draw_symbol(str(i), WIDTH * i, COLORS[i - 1])
+        color = COLORS[i - 1] if not dark else invert_color(COLORS[i - 1])
+        draw_symbol(str(i), WIDTH * i, color)
 
     flag = Image.open("textures/flag.png")
     flag = flag.resize((WIDTH, WIDTH))
@@ -56,3 +61,6 @@ def gen_sprite():
 
 image = gen_sprite()
 image.save('textures/digits.png')
+
+dark_image = gen_sprite(True)
+dark_image.save('textures/dark_digits.png')

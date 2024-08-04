@@ -1,6 +1,7 @@
 type ColorType = [number, number, number];
 
-interface ThemeType {
+export interface ThemeType {
+    pageBgColor: ColorType,
     bgColor: ColorType,
     borderBlack: ColorType,
     borderWhite: ColorType,
@@ -14,6 +15,7 @@ export const themes: {
     [key: string]: ThemeType
 } = {
     'main': {
+        pageBgColor: [204, 204, 204], 
         bgColor: [204, 196, 179],
         borderBlack: [0, 0, 0],
         borderWhite: [255, 255, 255],
@@ -21,9 +23,10 @@ export const themes: {
         scrollbarColor: [77, 77, 77],
     },
     'dark': {
+        pageBgColor: [60, 60, 60],
         bgColor: [57, 57, 57],
         borderBlack: [0, 0, 0],
-        borderWhite: [255, 255, 255],
+        borderWhite: [110, 110, 110],
         gridBorderColor: [179, 179, 179],
         scrollbarColor: [77, 77, 77],
     }
@@ -33,18 +36,49 @@ export const getStyleFromColor = ([r, g, b]: number[]) => {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-type ThemeName = keyof typeof themes;
+export type ThemeName = keyof typeof themes;
 
-interface ThemeChangerProps {
+type ThemeChangesMediatorCallback = (props: {themeName: ThemeName, theme: ThemeType})=>void;
+
+class ThemeChangesMediator {
+    callbacks: Map<string, ThemeChangesMediatorCallback>;
+
+    constructor() {
+        this.callbacks = new Map();
+    }
+
+    publishChangeTheme(themeName: ThemeName) {
+        this.callbacks.forEach(cb => {
+            cb({
+                themeName: themeName,
+                theme: themes[themeName]
+            });
+        })
+    }
+
+    subscribe(key: string, cb: ()=>void) {
+        this.callbacks.set(key, cb);
+    }
+
+    unsubscribe(key: string) {
+        this.callbacks.delete(key);
+    }
+}
+
+interface ThemeProcessorProps {
     defaultTheme: ThemeName
 }
 
 class ThemeProcessor {
     currentTheme: ThemeName;
     cssVars: {[key: string]: keyof ThemeType}
+    mediator: ThemeChangesMediator;
 
-    constructor(props: ThemeChangerProps) {
+    constructor(props: ThemeProcessorProps) {
+        this.mediator = new ThemeChangesMediator();
+
         this.cssVars = {
+            '--page-bg-color': 'pageBgColor',
             '--bg-color': 'bgColor',
             '--border-gradient-black': 'borderBlack',
             '--border-gradient-white': 'borderWhite',
@@ -53,12 +87,21 @@ class ThemeProcessor {
         this.setTheme(props.defaultTheme);
     }
 
-    setTheme(theme: ThemeName) {
-        this.currentTheme = theme;
+    setCSSVars() {
         Object.entries(this.cssVars).forEach(([cssVar, color]) => {
-            const styledColor = getStyleFromColor(themes[theme][color]);
+            const styledColor = getStyleFromColor(themes[this.currentTheme][color]);
             document.documentElement.style.setProperty(cssVar, styledColor);
         });
+    }
+
+    setTheme(theme: ThemeName) {
+        if (theme === this.currentTheme) {
+            return;
+        }
+
+        this.currentTheme = theme;
+        this.setCSSVars();
+        this.mediator.publishChangeTheme(theme);
     }
 }
 

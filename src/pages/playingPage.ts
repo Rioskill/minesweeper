@@ -459,13 +459,13 @@ export class PlayingPage implements Page {
                                     tag: 'button',
                                     id: 'theme-main-btn',
                                     text: 'main',
-                                    class: 'sunken',
+                                    class: 'sunken btn',
                                 },
                                 {
                                     tag: 'button',
                                     id: 'theme-dark-btn',
                                     text: 'dark',
-                                    class: 'bulging',
+                                    class: 'bulging btn',
                                 }
                             ]
                         },
@@ -481,13 +481,13 @@ export class PlayingPage implements Page {
                                     tag: 'button',
                                     id: 'gl-btn',
                                     text: 'webGL',
-                                    class: 'sunken',
+                                    class: 'sunken btn',
                                 },
                                 {
                                     tag: 'button',
                                     id: 'canvas-btn',
                                     text: 'canvas',
-                                    class: 'bulging',
+                                    class: 'bulging btn',
                                 }
                             ]
                         }
