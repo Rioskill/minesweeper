@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 FONTSIZE = 32
 
-FONTSIZE = 320
+FONTSIZE = 64
 
 CNT = 11
 WIDTH = FONTSIZE
