@@ -1,6 +1,7 @@
 import { FLAG_OVERFLOW, HIDDEN_OVERFLOW } from "../consts";
 import { MapGenerator } from "./mapGeneration";
 import { CoordsT } from "../models";
+import { Matrix } from "./matrix";
 
 interface GameMapProps {
     ROWS: number
@@ -14,7 +15,9 @@ interface GameMapProps {
 }
 
 export class GameMap {
-    map: number[][]
+    // map: number[][]
+    // matrix: number[][]
+    matrix: Matrix
 
     ROWS: number
     COLS: number
@@ -59,7 +62,7 @@ export class GameMap {
 
         let prevPercent = 0;
         const minPercentDiff = 2;
-        this.map = mapGenerator.generateMap(percent => {
+        this.matrix = mapGenerator.generateMap(percent => {
             if (Math.floor(percent) - prevPercent > minPercentDiff) {
                 prevPercent = Math.floor(percent);
                 console.log(percent);
@@ -113,7 +116,7 @@ export class GameMap {
         for (let i = chunk.y * this.CHUNKH; i < Math.min((chunk.y + 1) * this.CHUNKH, this.ROWS); i++) {
             for (let j = chunk.x * this.CHUNKW; j < Math.min((chunk.x + 1) * this.CHUNKW, this.COLS); j++) {
                 coords.push(
-                    ...mask.flatMap(([a, b]) => [(this.map[i][j] + a) * width, b])
+                    ...mask.flatMap(([a, b]) => [(this.matrix[i][j] + a) * width, b])
                 )
             }
         }
@@ -122,7 +125,7 @@ export class GameMap {
     }
 
     getMapVal(coords: CoordsT) {
-        return this.map[coords.y][coords.x];
+        return this.matrix[coords.y][coords.x];
     }
 
 
@@ -143,7 +146,7 @@ export class GameMap {
     }
 
     setFlagAt(tile: CoordsT) {
-        this.map[tile.y][tile.x] += FLAG_OVERFLOW;
+        this.matrix[tile.y][tile.x] += FLAG_OVERFLOW;
 
         this.minesRemaining--;
         if (this.onMinesRemainingUpdate) {
@@ -153,7 +156,7 @@ export class GameMap {
 
     removeFlagAt(tile: CoordsT) {
         this.minesRemaining++;
-        this.map[tile.y][tile.x] -= FLAG_OVERFLOW;
+        this.matrix[tile.y][tile.x] -= FLAG_OVERFLOW;
 
         if (this.onMinesRemainingUpdate) {
             this.onMinesRemainingUpdate(this.minesRemaining);

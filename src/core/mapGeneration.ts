@@ -1,5 +1,6 @@
 import { HIDDEN_OVERFLOW, MINE_VALUE } from "../consts";
 import { permutations, randInt, range } from "../utils";
+import { Matrix } from "./matrix";
 
 interface MapGeneratorProps {
     cols: number
@@ -8,7 +9,8 @@ interface MapGeneratorProps {
 }
 
 export class MapGenerator {
-    matrix: number[][];
+    // matrix: number[][];
+    matrix: Matrix
     cols: number;
     rows: number;
     mines: number;
@@ -95,7 +97,11 @@ export class MapGenerator {
     }
     
     generateMap(cb?: (completePercent: number)=>void) {
-        this.matrix = Array(this.rows).fill(0).map(() => Array(this.cols).fill(0));
+        // this.matrix = Array(this.rows).fill(0).map(() => Array(this.cols).fill(0));
+        this.matrix = new Matrix({
+            rows: this.rows,
+            cols: this.cols
+        });
     
         let currNumOfOperations = 0;
         const totalNumOfOperations = this.cols * this.rows + this.mines;
@@ -104,8 +110,8 @@ export class MapGenerator {
         const list: [number, number][] = [];
         let index = 0;
 
-        for (let row = 0; row < this.matrix.length; row++) {
-            for (let col = 0; col < this.matrix[0].length; col++) {
+        for (let row = 0; row < this.matrix.rows; row++) {
+            for (let col = 0; col < this.matrix.cols; col++) {
                 const thisIndex = index;
                 index++;
 
@@ -122,14 +128,18 @@ export class MapGenerator {
 
         list.forEach(([row, col]) => this.matrix[row][col] = MINE_VALUE);
     
-        return this.matrix.map((row, i) => {
-            currNumOfOperations += row.length;
+        for (let row = 0; row < this.matrix.rows; row++) {
+            currNumOfOperations += this.matrix.rows;
 
             if (cb) {
                 cb(currNumOfOperations / totalNumOfOperations * 100);
             }
 
-            return row.map((_, j) => this.calcValue(i, j) + HIDDEN_OVERFLOW)
-        });
+            for (let col = 0; col < this.matrix.cols; col++) {
+                this.matrix[row][col] = this.calcValue(row, col) + HIDDEN_OVERFLOW
+            }
+        }
+
+        return this.matrix;
     }
 }

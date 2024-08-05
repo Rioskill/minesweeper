@@ -24,6 +24,6 @@ onmessage = (ev: MessageEvent<StartMessageData>) => {
 
     postMessage({
         type: 'result',
-        value: res
+        value: res.data
     });
 }

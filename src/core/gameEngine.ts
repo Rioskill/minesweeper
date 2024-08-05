@@ -118,7 +118,7 @@ export class GameEngine {
                     mines: this.map.minesTotal,
                 })
     
-                mapGenerator.matrix = this.map.map;
+                mapGenerator.matrix = this.map.matrix;
                 mapGenerator.repositionMine(tileCoords.y, tileCoords.x);
     
                 this.openTile(tileCoords);
@@ -128,7 +128,7 @@ export class GameEngine {
 
 
         if (this.map.isHidden(val) && val !== HIDDEN_OVERFLOW) {
-            this.map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
+            this.map.matrix[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
             
             if (this.map.getMapVal(tileCoords) === MINE_VALUE) {
                 this.stopGame();
@@ -150,10 +150,10 @@ export class GameEngine {
             ]
 
             const processTile = (tileCoords: CoordsT) => {
-                this.map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
+                this.map.matrix[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;
                 this.updateOpenedTilesCnt();
                 
-                if (this.map.map[tileCoords.y][tileCoords.x] > 0) {
+                if (this.map.matrix[tileCoords.y][tileCoords.x] > 0) {
                     return;
                 }
 
@@ -173,7 +173,7 @@ export class GameEngine {
                 for (let i = 0; i < num && queue.length > 0; i++) {
                     const curr = q.shift();
 
-                    if (curr === undefined || this.map.map[curr.y][curr.x] < HIDDEN_OVERFLOW) {
+                    if (curr === undefined || this.map.matrix[curr.y][curr.x] < HIDDEN_OVERFLOW) {
                         continue;
                     }
 

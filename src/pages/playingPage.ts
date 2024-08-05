@@ -12,9 +12,10 @@ import { CanvasRenderer } from "../renderers/canvasRenderer";
 import { Renderer } from "../renderers/models";
 import { theme, ThemeName } from "../themes";
 import { EventType, ToggleBtnBlock } from "./components/toggleBtnBlock";
+import { Matrix } from "../core/matrix";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
-    mapData: number[][]
+    mapData: Uint8Array
 }
 
 type RendererType = 'gl' | 'canvas';
@@ -266,7 +267,13 @@ export class PlayingPage implements Page {
     
         map.onMinesRemainingUpdate = menu.setMinesDisplayValue.bind(menu);
     
-        map.map = mapData;
+        map.matrix = new Matrix({
+            rows: ROWS,
+            cols: COLS,
+            data: mapData
+        });
+
+        // map.map = mapData;
 
         this.rendererType = 'gl';
 

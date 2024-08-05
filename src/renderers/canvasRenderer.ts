@@ -144,7 +144,7 @@ export class CanvasRenderer implements Renderer{
 
         for(let i = topLeft.y; i < bottomRight.y; i++) {
             for(let j = topLeft.x; j < bottomRight.x; j++) {
-                const val = props.map.map[i][j];
+                const val = props.map.matrix[i][j];
 
                 const pos = {
                     x: j * COLL - props.view.offset.x,
