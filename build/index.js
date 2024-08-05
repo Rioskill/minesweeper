@@ -910,7 +910,7 @@ class GameMenu {
     clearInterval(this.gameTickTimer);
   }
   get restartBtnSrc() {
-    return `/textures/smiles/${this.restartBtnStatus}.png`;
+    return `/minesweeper/textures/smiles/${this.restartBtnStatus}.png`;
   }
   setRestartBtnStatus(status) {
     this.restartBtnStatus = status;
@@ -1289,9 +1289,9 @@ class GLRenderer {
   onChangeTheme({ themeName }) {
     const samplerLocation = this.gl.getUniformLocation(this.program, "uSampler");
     if (themeName === "dark") {
-      this.loadTexture(samplerLocation, "/textures/dark_digits.png");
+      this.loadTexture(samplerLocation, "/minesweeper/textures/dark_digits.png");
     } else {
-      this.loadTexture(samplerLocation, "/textures/digits.png");
+      this.loadTexture(samplerLocation, "/minesweeper/textures/digits.png");
     }
   }
   destruct() {
@@ -1557,9 +1557,9 @@ class CanvasRenderer {
   }
   onThemeChange({ themeName }) {
     if (themeName === "dark") {
-      this.img.src = "/textures/dark_digits.png";
+      this.img.src = "/minesweeper/textures/dark_digits.png";
     } else {
-      this.img.src = "/textures/digits.png";
+      this.img.src = "/minesweeper/textures/digits.png";
     }
   }
   updateOffset(map, offset) {
@@ -1807,8 +1807,8 @@ class PlayingPage {
     if (!gl) {
       throw new Error("your browser does not support WebGL");
     }
-    const vSourceP = fetch("/src/shaders/vertexShader.vs");
-    const fSourceP = fetch("/src/shaders/fragmentShader.fs");
+    const vSourceP = fetch("/minesweeper/src/shaders/vertexShader.vs");
+    const fSourceP = fetch("/minesweeper/src/shaders/fragmentShader.fs");
     const vSource = await vSourceP.then((source) => source.text());
     const fSource = await fSourceP.then((source) => source.text());
     const renderer = new GLRenderer({

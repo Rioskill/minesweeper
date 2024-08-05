@@ -32,9 +32,9 @@ export class CanvasRenderer implements Renderer{
 
     onThemeChange({themeName}: {themeName: ThemeName}) {
         if (themeName === 'dark') {
-            this.img.src = "/textures/dark_digits.png";
+            this.img.src = "/minesweeper/textures/dark_digits.png";
         } else {
-            this.img.src = "/textures/digits.png";
+            this.img.src = "/minesweeper/textures/digits.png";
         }
     }
 

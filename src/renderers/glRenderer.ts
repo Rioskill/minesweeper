@@ -85,9 +85,9 @@ export class GLRenderer implements Renderer {
         const samplerLocation = this.gl.getUniformLocation(this.program, "uSampler")!;
 
         if (themeName === 'dark') {
-            this.loadTexture(samplerLocation, "/textures/dark_digits.png");
+            this.loadTexture(samplerLocation, "/minesweeper/textures/dark_digits.png");
         } else {
-            this.loadTexture(samplerLocation, "/textures/digits.png");
+            this.loadTexture(samplerLocation, "/minesweeper/textures/digits.png");
         }
     }
 

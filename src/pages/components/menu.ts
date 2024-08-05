@@ -44,7 +44,7 @@ export class GameMenu {
     }
 
     get restartBtnSrc() {
-        return `/textures/smiles/${this.restartBtnStatus}.png`;
+        return `/minesweeper/textures/smiles/${this.restartBtnStatus}.png`;
     }
 
     setRestartBtnStatus(status: RestartBtnStatusType) {
