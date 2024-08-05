@@ -1,3 +1,4 @@
+import { ToggleBtnBlock } from "./components";
 import { Page } from "./page";
 import { PageElement, PageSwitcher } from "./pageElement";
 
@@ -19,6 +20,34 @@ const numberInputBlock = (label: string, inputParams?: any): PageElement => ({
     ]
 })
 
+interface GameMode {
+    cols: number
+    rows: number
+    mines: number
+}
+
+const gameModes: {
+    [key: string]: GameMode
+} = {
+    'easy': {
+        cols: 9,
+        rows: 9,
+        mines: 6
+    },
+    'medium': {
+        cols: 16,
+        rows: 16,
+        mines: 64
+    },
+    'hard': {
+        cols: 25,
+        rows: 25,
+        mines: 300
+    }
+}
+
+type GameModeName = keyof typeof gameModes & string;
+
 export class MenuPage implements Page {
     events: {
         name: string,
@@ -30,10 +59,47 @@ export class MenuPage implements Page {
     rows: number
     mines: number
 
+    gameModeBtnBlock: ToggleBtnBlock<GameModeName>
+
     constructor() {
         this.cols = 9;
         this.rows = 9;
         this.mines = 80;
+
+        this.gameModeBtnBlock = new ToggleBtnBlock({
+            buttons: [
+                {
+                    id: 'easy',
+                    class: 'filled'
+                },
+                {
+                    id: 'medium',
+                    class: 'filled'
+                },
+                {
+                    id: 'hard',
+                    class: 'filled'
+                }
+            ],
+            name: 'Game Mode',
+            class: 'main-menu__gamemode-btn-block',
+            handler: this.setGameMode.bind(this),
+            defaultValue: undefined
+        })
+    }
+
+    setGameMode(gameMode: GameModeName) {
+        const colsInput = document.getElementById('cols-input') as HTMLInputElement;
+        const rowsInput = document.getElementById('rows-input') as HTMLInputElement;
+        const minesInput = document.getElementById('mines-input') as HTMLInputElement;
+
+        this.cols = gameModes[gameMode].cols;
+        this.rows = gameModes[gameMode].rows;
+        this.mines = gameModes[gameMode].mines;
+       
+        colsInput.value = this.cols.toString();
+        rowsInput.value = this.rows.toString();
+        minesInput.value = this.mines.toString();
     }
 
     onLoad(switcher: PageSwitcher) {
@@ -88,12 +154,16 @@ export class MenuPage implements Page {
         this.events.forEach(({name, target, listener}) => {
             target.addEventListener(name, listener);
         });
+
+        this.gameModeBtnBlock.onLoad();
     }
 
     onUnload() {
         this.events.forEach(({name, target, listener}) => {
             target.removeEventListener(name, listener);
         });
+
+        this.gameModeBtnBlock.onUnload();
     }
 
     render() {
@@ -101,6 +171,7 @@ export class MenuPage implements Page {
             tag: 'div',
             class: 'main-menu',
             children: [
+                this.gameModeBtnBlock.render(),
                 {
                     tag: 'div',
                     class: 'main-menu__input-block',

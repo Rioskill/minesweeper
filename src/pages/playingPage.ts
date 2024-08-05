@@ -36,6 +36,7 @@ export class PlayingPage implements Page {
 
         this.rendererBtnBlock = new ToggleBtnBlock({
             name: 'Renderer',
+            class: 'options-container',
             buttons: [
                 {
                     id: 'gl'
@@ -50,6 +51,7 @@ export class PlayingPage implements Page {
 
         this.themeBtnBlock = new ToggleBtnBlock({
             name: 'Theme',
+            class: 'options-container',
             buttons: [
                 {
                     id: 'main'

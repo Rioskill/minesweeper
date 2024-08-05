@@ -15,21 +15,24 @@ interface ToggleBtnBlockProps<T extends string> {
     buttons: ToggleBtn<T>[]
     name: string
     handler: ToggleBtnHandler<T>
-    defaultValue: T
+    defaultValue?: T
+    class?: string
 }
 
 export class ToggleBtnBlock<T extends string> {
     name: string
-    currentVal: T
+    currentVal?: T
     buttons: ToggleBtn<T>[]
     events: EventType[]
     handler: ToggleBtnHandler<T>
+    class?: string
 
     constructor(props: ToggleBtnBlockProps<T>) {
         this.name = props.name;
         this.buttons = props.buttons;
         this.handler = props.handler;
         this.currentVal = props.defaultValue;
+        this.class = props.class;
     }
 
     setSunken(el: HTMLElement) {
@@ -87,7 +90,7 @@ export class ToggleBtnBlock<T extends string> {
         
         return {
             tag: 'div',
-            class: 'options-container bulging',
+            class: `bulging ${this.class || ''}`,
             children: [
                 {
                     tag: 'h3',
