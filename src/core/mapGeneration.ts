@@ -15,10 +15,16 @@ export class MapGenerator {
     rows: number;
     mines: number;
 
+    neighbourDeltas: number[][]
+
     constructor(props: MapGeneratorProps) {
         this.cols = props.cols;
         this.rows = props.rows;
         this.mines = props.mines;
+
+        const indices = range(-1, 2);
+        this.neighbourDeltas = permutations(indices, indices)
+                                .filter(([i, j]) => !(i === 0 && j === 0));
     }
 
     hasBomb(i: number, j: number) {
@@ -29,15 +35,10 @@ export class MapGenerator {
             return false;
         }
     
-        return this.matrix[i][j] === MINE_VALUE || this.matrix[i][j] === MINE_VALUE + HIDDEN_OVERFLOW;
+        const mapValue = this.matrix[i][j];
+        return mapValue === MINE_VALUE || mapValue === MINE_VALUE + HIDDEN_OVERFLOW;
     }
 
-    get neighbourDeltas() {
-        const indices = range(-1, 2);
-        return permutations(indices, indices)
-            .filter(([i, j]) => !(i === 0 && j === 0))
-    }
-    
     calcValue(y: number, x: number) {
         if (this.matrix[y][x] === MINE_VALUE) {
             return MINE_VALUE;

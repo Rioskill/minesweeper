@@ -12,10 +12,10 @@ import { CanvasRenderer } from "../renderers/canvasRenderer";
 import { Renderer } from "../renderers/models";
 import { theme, ThemeName } from "../themes";
 import { EventType, ToggleBtnBlock } from "./components/toggleBtnBlock";
-import { Matrix } from "../core/matrix";
+import { Matrix, MatrixDataType } from "../core/matrix";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
-    mapData: Uint8Array
+    mapData: MatrixDataType
 }
 
 type RendererType = 'gl' | 'canvas';
