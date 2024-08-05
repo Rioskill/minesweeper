@@ -56,6 +56,12 @@ export class ToggleBtnBlock<T extends string> {
         })
     }
 
+    setCurrentValue(value: T) {
+        console.log('set value', value)
+        this.currentVal = value;
+        this.setCurrentSunken();
+    }
+
     onLoad() {
         this.setCurrentSunken();
 

@@ -1,7 +1,7 @@
 import { displayBlock } from "../display/display";
 import { GameEngine } from "../core/gameEngine";
 import { GameMap } from "../core/gameMap";
-import { makeCoords } from "../models";
+import { makeCoords, unfoldCoords } from "../models";
 import { COLL, ROWL, CHUNKW, CHUNKH } from "../consts";
 import { GameMenu } from "./components/menu";
 import { GLRenderer } from "../renderers/glRenderer";
@@ -13,8 +13,10 @@ import { Renderer } from "../renderers/models";
 import { theme, ThemeName } from "../themes";
 import { EventType, ToggleBtnBlock } from "./components/toggleBtnBlock";
 import { Matrix, MatrixDataType } from "../core/matrix";
+import { cacher } from "../caching";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
+    offset?: [number, number],
     mapData: MatrixDataType
 }
 
@@ -76,6 +78,7 @@ export class PlayingPage implements Page {
 
         const restartBtn = document.getElementById('restart-btn');
         const mainMenuBtn = document.getElementById('main-menu-btn');
+        const saveBtn = document.getElementById('save-btn');
 
         this.events = [
             {
@@ -179,6 +182,13 @@ export class PlayingPage implements Page {
                 listener: () => {
                     switcher.changePage('mainMenu', switcher);
                 }
+            },
+            {
+                name: 'click',
+                target: saveBtn,
+                listener: () => {
+                    this.saveCurrentSession();
+                }
             }
         ]
 
@@ -226,7 +236,22 @@ export class PlayingPage implements Page {
         return renderer;
     }
 
-    onLoad({ROWS, COLS, MINES, mapData, switcher}: onPlayingLoadProps) {
+    saveCurrentSession() {
+        if (!this.engine) {
+            console.error("can't save: no engine");
+            return;
+        }
+
+        cacher.saveCurrentSession({
+            cols: this.engine.map.COLS,
+            rows: this.engine.map.ROWS,
+            mines: this.engine.map.minesTotal,
+            mapData: this.engine.map.matrix.data,
+            offset: unfoldCoords(this.engine.view.offset)
+        })
+    }
+
+    onLoad({ROWS, COLS, MINES, mapData, switcher, offset}: onPlayingLoadProps) {
         const canvas = document.querySelector("canvas")!;
     
         document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
@@ -273,8 +298,6 @@ export class PlayingPage implements Page {
             data: mapData
         });
 
-        // map.map = mapData;
-
         this.rendererType = 'gl';
 
         this.setupWebGL(canvas).then(renderer => {
@@ -295,7 +318,11 @@ export class PlayingPage implements Page {
                 },
                 canvas: canvas
             })
-        
+
+            if (offset) {
+                mainView.offset = makeCoords(...offset);
+            }
+
             map.calcChunkSize(mainView.viewSize);
         
             this.engine = new GameEngine({
@@ -311,6 +338,7 @@ export class PlayingPage implements Page {
                 COLS,
                 MINES,
                 mapData,
+                offset,
                 switcher
             });
     
@@ -325,6 +353,20 @@ export class PlayingPage implements Page {
             }
     
             this.startGame(this.engine);
+
+            cacher.readSetting('renderer')
+                .then((rendererName) => {
+                    console.log('rendererName', rendererName)
+                    if (rendererName === undefined) {
+                        return;
+                    }
+
+                    this.setRenderer(rendererName as RendererType);
+                    this.rendererBtnBlock.setCurrentValue(rendererName as RendererType);
+                })
+                .catch(reason => {
+                    console.error(reason);
+                })
         })
     }
 
@@ -360,6 +402,11 @@ export class PlayingPage implements Page {
         this.engine.view.canvas = canvas;
 
         this.renderer?.destruct();
+
+        cacher.putSetting({
+            id: 'renderer',
+            value: rendererName
+        });
 
         if (rendererName === 'gl') {
             this.setupWebGL(canvas).then(renderer => {
@@ -456,7 +503,13 @@ export class PlayingPage implements Page {
                             class: 'bulging btn'
                         },
                         this.rendererBtnBlock.render(),
-                        this.themeBtnBlock.render()
+                        this.themeBtnBlock.render(),
+                        {
+                            tag: 'button',
+                            text: 'Save',
+                            id: 'save-btn',
+                            class: 'bulging pressable btn'
+                        },
                     ]
                 }
             ]

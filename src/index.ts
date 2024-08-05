@@ -1,7 +1,8 @@
-import { PageSwitcher } from "./pages/pageElement";
+import { PageSwitcher } from "./pages/pageSwitcher";
 import { LoadingPage } from "./pages/loadingPage";
 import { MenuPage } from "./pages/menuPage";
 import { PlayingPage } from "./pages/playingPage";
+import { cacher } from "./caching";
 
 
 export type MapGeneratorData = {
@@ -31,6 +32,21 @@ const main = () => {
     });
 
     switcher.changePage('mainMenu', switcher);
+
+    cacher.loadPrevSession()
+        .then((session) => {
+            switcher.changePage('playing', {
+                ROWS: session.rows,
+                COLS: session.cols,
+                MINES: 9,
+                mapData: session.mapData,
+                offset: session.offset,
+                switcher: switcher
+            })
+        })
+        .catch((reason) => {
+            console.error(reason);
+        })
 }
 
 window.addEventListener('load', function onLoadListener() {

@@ -80,18 +80,22 @@ bool isClosed(float coordX) {
             minesVisible == 0.;
 }
 
-bool isScrollBar() {
-    if (viewSize == fullSize) {
-        return false;
-    }
+bool horizontalScrollBarExists() {
+    return viewSize.x < fullSize.x;
+}
 
+bool verticalScrollBarExists() {
+    return viewSize.y < fullSize.y;
+}
+
+bool isScrollBar() {
     vec2 localPart = gl_FragCoord.xy / viewSize.xy;
 
     vec2 offsetPart = offset / fullSize;
     vec2 combPart = (offset + viewSize) / fullSize;
 
-    return gl_FragCoord.y < 10. && localPart.x > offsetPart.x && localPart.x < combPart.x ||
-           gl_FragCoord.x > viewSize.x - 10. && localPart.y > offsetPart.y && localPart.y < combPart.y;
+    return horizontalScrollBarExists() && gl_FragCoord.y < 10. && localPart.x > offsetPart.x && localPart.x < combPart.x ||
+           verticalScrollBarExists() && gl_FragCoord.x > viewSize.x - 10. && localPart.y > offsetPart.y && localPart.y < combPart.y;
 }
 
 bool isBorder(vec2 p, vec2 maxP, float stroke) {

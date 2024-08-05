@@ -90,7 +90,7 @@ class ThemeProcessor {
 
         cacher.readSetting('theme')
             .then((theme) => { 
-                this.setTheme(theme, false)
+                this.setTheme(theme || 'main', false)
             })
             .catch((error) => console.error(error));
     }

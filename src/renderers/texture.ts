@@ -3,7 +3,6 @@
 // When the image finished loading copy it into the texture.
 //
 export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
-    console.log('load')
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
 
@@ -34,11 +33,7 @@ export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
 
     const image = new Image();
 
-    if (image.complete) {
-        console.log('image already in cache');
-    }
     image.onload = () => {
-        console.log('downloading image')
         gl.bindTexture(gl.TEXTURE_2D, texture);
         gl.texImage2D(
             gl.TEXTURE_2D,

@@ -7,6 +7,7 @@ type ResolveType<T> = (value: T | PromiseLike<T>) => void
 type RejectType = (reason?: any) => void;
 
 interface ScheduledReadType<T> {
+    transaction?: IDBTransaction
     store: string
     id: string
     resolve: ResolveType<T>
@@ -21,6 +22,14 @@ interface SheduledPutType {
 interface CacherSetting {
     id: string
     value: string
+}
+
+interface SessionProps {
+    cols: number
+    rows: number
+    mines: number
+    mapData: Uint8Array
+    offset: [number, number]
 }
 
 class Cacher {
@@ -42,10 +51,9 @@ class Cacher {
                 //initialize
                 if (!this.db.objectStoreNames.contains('Settings')) { // если хранилище "books" не существует
                     this.db.createObjectStore('Settings', {keyPath: 'id'}); // создаём хранилище
+                    this.db.createObjectStore('Session', {keyPath: 'id'});
                 }
             }
-
-            console.log('upgrade needed')
         };
           
         openRequest.onerror = () => {
@@ -54,13 +62,10 @@ class Cacher {
         
         openRequest.onsuccess = () => {
             this.db = openRequest.result;
-            console.log('indexed db open succes');
 
             this.performScheduledReads();
             this.performScheduledPuts();
         };
-
-        console.log('cacher init', this.db)
     }
 
     performScheduledPuts() {
@@ -70,14 +75,20 @@ class Cacher {
     }
 
     performScheduledReads() {
-        this.scheduledReads.forEach(({store, id, resolve, reject}) => {
-            this.read(store, id)
-                .then((value) => resolve(value))
-                .catch((reason) => reject(reason))
+        this.scheduledReads.forEach(({transaction, store, id, resolve, reject}) => {
+            if (transaction === undefined) {
+                this.read(store, id)
+                    .then((value) => resolve(value))
+                    .catch((reason) => reject(reason))
+            } else {
+                this.readInsideTransaction(transaction, store, id)
+                    .then((value) => resolve(value))
+                    .catch((reason) => reject(reason))
+            }
         })
     }
 
-    scheduleRead<T>(store: string, id: string): Promise<T> {
+    scheduleRead<T>(store: string, id: string, transaction?: IDBTransaction): Promise<T> {
         return new Promise((resolve, reject) => {
             this.scheduledReads.push({
                 store,
@@ -97,7 +108,6 @@ class Cacher {
 
     put(store: string, obj: any) {
         let transaction = this.db.transaction(store, "readwrite");
-
         let storeObj = transaction.objectStore(store);
 
         let request = storeObj.put(obj);
@@ -123,16 +133,22 @@ class Cacher {
         this.safePut('Settings', setting);
     }
 
-    read<T>(store: string, id: string): Promise<T> {
+    readInsideTransaction<T>(
+        transaction: IDBTransaction,
+        store: string,
+        id: string): Promise<T | undefined> 
+    {
         return new Promise((resolve, reject) => {
-            let transaction = this.db.transaction(store, "readonly");
-
             let storeObj = transaction.objectStore(store);
     
             const request = storeObj.get(id);
 
             request.onsuccess = () => {
-                resolve(request.result.value);
+                if (request.result) {
+                    resolve(request.result.value);
+                } else {
+                    resolve(undefined);
+                }
             }
 
             request.onerror = () => {
@@ -141,16 +157,60 @@ class Cacher {
         })
     }
 
-    safeRead<T>(store: string, id: string): Promise<T> {
+    read<T>(store: string, id: string): Promise<T | undefined> {
+        let transaction = this.db.transaction(store, "readonly");
+        return this.readInsideTransaction(transaction, store, id);
+    }
+
+    remove(store: string, id: string) {
+        let transaction = this.db.transaction(store, "readwrite");
+
+        let storeObj = transaction.objectStore(store);
+
+        storeObj.delete(id);
+    }
+
+    safeRead<T>(store: string, id: string, transaction?: IDBTransaction): Promise<T | undefined> {
         if (this.db) {
             return this.read(store, id);
         }
 
-        return this.scheduleRead(store, id);
+        return this.scheduleRead(store, id, transaction);
     }
 
-    readSetting(id: string): Promise<string> {
+    readSetting(id: string): Promise<string | undefined> {
         return this.safeRead('Settings', id);
+    }
+
+    saveCurrentSession(session: SessionProps) {
+        let transaction = this.db.transaction('Session', "readwrite");
+        const sessionObj = transaction.objectStore('Session');
+
+        sessionObj.put({id: 'cols', value: session.cols});
+        sessionObj.put({id: 'rows', value: session.rows});
+        sessionObj.put({id: 'mines', value: session.mines});
+        sessionObj.put({id: 'mapData', value: session.mapData});
+        sessionObj.put({id: 'offset', value: session.offset});
+    }
+
+    async loadPrevSession(): Promise<SessionProps> {
+        const readSessionProp = (id: string) => this.safeRead('Session', id);
+
+        const cols = readSessionProp('cols') as Promise<number>;
+        const row = readSessionProp('rows') as Promise<number>;
+        const mines = readSessionProp('mines') as Promise<number>;
+        const mapData = readSessionProp('mapData') as Promise<Uint8Array>;
+        const offset = readSessionProp('offset') as Promise<[number, number]>;
+
+        const session = await Promise.all([cols, row, mines, mapData, offset]);
+
+        return {
+            cols: session[0],
+            rows: session[1],
+            mines: session[2],
+            mapData: session[3],
+            offset: session[4]
+        };
     }
 }
 

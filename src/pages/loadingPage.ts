@@ -1,6 +1,6 @@
 import { MapGeneratorData } from ".."
 import { Page } from "./page"
-import { PageSwitcher } from "./pageElement"
+import { PageSwitcher } from "./pageSwitcher"
 
 export interface onLoadingLoadProps {
     switcher: PageSwitcher,
@@ -46,6 +46,8 @@ export class LoadingPage implements Page {
             } else {
                 console.log(data);
             }
+
+            
         }
     
         mapGenerationWorker.postMessage({

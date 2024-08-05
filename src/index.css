@@ -167,6 +167,14 @@ canvas {
     background: var(--bg-color);
 }
 
+.btn.pressable:active {
+    border: var(--border-gradient-size) solid black;
+    border-image: linear-gradient(to right bottom, 
+        var(--border-gradient-black) 50%, 
+        var(--border-gradient-white) 50%
+    ) 1;
+}
+
 .input-block {
     display: flex;
     flex-direction: column;

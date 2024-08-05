@@ -1,6 +1,7 @@
 import { ToggleBtnBlock } from "./components/toggleBtnBlock";
 import { Page } from "./page";
-import { PageElement, PageSwitcher } from "./pageElement";
+import { PageElement } from "./pageElement";
+import { PageSwitcher } from "./pageSwitcher";
 
 const numberInputBlock = (label: string, inputParams?: any): PageElement => ({
     tag: 'div',
