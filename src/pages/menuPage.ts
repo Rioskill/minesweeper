@@ -108,16 +108,23 @@ export class MenuPage implements Page {
         const minesInput = document.getElementById('mines-input');
         const submitBtn = document.getElementById('submit');
 
+        const setNewMinesInputMax = () => {
+            const minesInput = document.getElementById('mines-input') as HTMLInputElement;
+            
+            const newMax = this.rows * this.cols - 1;
+            minesInput.max = newMax.toString();
+            if (parseInt(minesInput.value) > newMax) {
+                minesInput.value = newMax.toString();
+            }
+        }
+
         this.events = [
             {
                 name: 'change',
                 target: colsInput,
                 listener: (ev) => {
                     this.cols = parseInt(ev.target.value);
-                    
-                    const minesInput = document.getElementById('mines-input') as HTMLInputElement;
-            
-                    minesInput.max = (this.rows * this.cols).toString();
+                    setNewMinesInputMax();
                 }
             },
             {
@@ -125,9 +132,7 @@ export class MenuPage implements Page {
                 target: rowsInput,
                 listener: (ev) => {
                     this.rows = parseInt(ev.target.value);
-                    const minesInput = document.getElementById('mines-input') as HTMLInputElement;
-            
-                    minesInput.max = (this.rows * this.cols).toString();
+                    setNewMinesInputMax();
                 }
             },
             {
@@ -192,7 +197,7 @@ export class MenuPage implements Page {
                             id: 'mines-input',
                             value: this.mines,
                             min: 0,
-                            max: 81,
+                            max: 80,
                         }),
                     ]
                 },

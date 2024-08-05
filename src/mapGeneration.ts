@@ -96,23 +96,27 @@ export class MapGenerator {
         let currNumOfOperations = 0;
         const totalNumOfOperations = this.cols * this.rows + this.mines;
 
-        range(this.mines).forEach(i => {
-            // copy paste for better performance
-            let row = randInt(this.rows);
-            let col = randInt(this.cols);
-    
-            while (this.matrix[row][col] === MINE_VALUE) {
-                row = randInt(this.rows);
-                col = randInt(this.cols);
-            }
-    
-            currNumOfOperations++;
-            this.matrix[row][col] = MINE_VALUE;
+        //random sampling
+        const list: [number, number][] = [];
+        let index = 0;
 
-            if (cb) {
-                cb(currNumOfOperations / totalNumOfOperations * 100);
+        for (let row = 0; row < this.matrix.length; row++) {
+            for (let col = 0; col < this.matrix[0].length; col++) {
+                const thisIndex = index;
+                index++;
+
+                if (index < this.mines) {
+                    list.push([row, col]);
+                } else {
+                    const j = randInt(thisIndex);
+                    if (j < this.mines) {
+                        list[j] = [row, col];
+                    }
+                }
             }
-        })
+        }
+
+        list.forEach(([row, col]) => this.matrix[row][col] = MINE_VALUE);
     
         return this.matrix.map((row, i) => {
             currNumOfOperations += row.length;
