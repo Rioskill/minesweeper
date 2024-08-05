@@ -5,6 +5,7 @@ import { CoordsT, makeCoords } from "./models";
 import { addVectors } from "./utils";
 import { MinesweeperView } from "./view";
 import { Renderer } from "./renderers/models";
+import { MapGenerator } from "./mapGeneration";
 
 interface GameEngineProps {
     map: GameMap
@@ -18,6 +19,7 @@ export class GameEngine {
     renderer: Renderer
 
     minesVisible: boolean
+    firstTileOpen: boolean
 
     gameGoing: boolean
     onGameOver: (status: 'win' | 'lose')=>void
@@ -30,6 +32,7 @@ export class GameEngine {
         this.renderer = props.renderer;
 
         this.minesVisible = false;
+        this.firstTileOpen = true;
 
         this.gameGoing = true;
 
@@ -106,6 +109,24 @@ export class GameEngine {
 
     openTile(tileCoords: CoordsT) {
         const val = this.map.getMapVal(tileCoords);
+
+        if (this.firstTileOpen) {
+            this.firstTileOpen = false;
+            if (val === MINE_VALUE + HIDDEN_OVERFLOW) {
+                const mapGenerator = new MapGenerator({
+                    cols: this.map.COLS,
+                    rows: this.map.ROWS,
+                    mines: this.map.minesTotal,
+                })
+    
+                mapGenerator.matrix = this.map.map;
+                mapGenerator.repositionMine(tileCoords.y, tileCoords.x);
+    
+                this.openTile(tileCoords);
+                return;
+            }
+        }
+
 
         if (this.map.isHidden(val) && val !== HIDDEN_OVERFLOW) {
             this.map.map[tileCoords.y][tileCoords.x] -= HIDDEN_OVERFLOW;

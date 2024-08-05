@@ -27,7 +27,13 @@ export class MapGenerator {
             return false;
         }
     
-        return this.matrix[i][j] === MINE_VALUE;
+        return this.matrix[i][j] === MINE_VALUE || this.matrix[i][j] === MINE_VALUE + HIDDEN_OVERFLOW;
+    }
+
+    get neighbourDeltas() {
+        const indices = range(-1, 2);
+        return permutations(indices, indices)
+            .filter(([i, j]) => !(i === 0 && j === 0))
     }
     
     calcValue(y: number, x: number) {
@@ -35,14 +41,53 @@ export class MapGenerator {
             return MINE_VALUE;
         }
     
-        const indices = range(-1, 2);
-    
-        const bombCnt = permutations(indices, indices)
-            .filter(([i, j]) => !(i === 0 && j === 0))
+        const bombCnt = this.neighbourDeltas
             .map(([i, j]) => (this.hasBomb(y + i, x + j) ? 1 : 0) as number)
             .reduce((sum, n) => sum + n, 0)
     
         return bombCnt;
+    }
+
+    repositionMine(row: number, col: number) {
+        const [newRow, newCol] = this.findMinePlace();
+
+        this.matrix[row][col] = this.calcValue(row, col) + HIDDEN_OVERFLOW;
+        this.matrix[newRow][newCol] = MINE_VALUE + HIDDEN_OVERFLOW;
+
+        const handleNotMines = (baseRow: number, baseCol: number, cb: (y: number, x: number)=>void) => {
+            return ([y, x]: number[]) => {
+                const i = baseRow + y;
+                const j = baseCol + x;
+
+                if (
+                        i < 0 ||
+                        i >= this.rows ||
+                        j < 0 ||
+                        j >= this.cols ||
+                        this.matrix[i][j] === MINE_VALUE ||
+                        this.matrix[i][j] === MINE_VALUE + HIDDEN_OVERFLOW
+                    ) {
+                    return;
+                }
+
+                cb(i, j);
+            }
+        }
+
+        this.neighbourDeltas.forEach(handleNotMines(row, col, (i, j) => this.matrix[i][j]--));
+        this.neighbourDeltas.forEach(handleNotMines(newRow, newCol, (i, j) => this.matrix[i][j]++));
+    }
+
+    findMinePlace() {
+        let row = randInt(this.rows);
+        let col = randInt(this.cols);
+
+        while (this.matrix[row][col] === MINE_VALUE + HIDDEN_OVERFLOW) {
+            row = randInt(this.rows);
+            col = randInt(this.cols);
+        }
+
+        return [row, col];
     }
     
     generateMap(cb?: (completePercent: number)=>void) {
@@ -52,6 +97,7 @@ export class MapGenerator {
         const totalNumOfOperations = this.cols * this.rows + this.mines;
 
         range(this.mines).forEach(i => {
+            // copy paste for better performance
             let row = randInt(this.rows);
             let col = randInt(this.cols);
     

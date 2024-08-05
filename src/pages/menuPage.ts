@@ -33,7 +33,7 @@ export class MenuPage implements Page {
     constructor() {
         this.cols = 9;
         this.rows = 9;
-        this.mines = 9;
+        this.mines = 80;
     }
 
     onLoad(switcher: PageSwitcher) {
@@ -75,12 +75,6 @@ export class MenuPage implements Page {
                 name: 'click',
                 target: submitBtn,
                 listener: () => {
-                    console.log('submit', {
-                        COLS: this.cols,
-                        ROWS: this.rows,
-                        MINES: this.mines,
-                        switcher
-                    })
                     switcher.changePage('loading', {
                         COLS: this.cols,
                         ROWS: this.rows,
