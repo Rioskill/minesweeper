@@ -61,8 +61,12 @@ export class PlayingPage implements Page {
                 }
             ],
             handler: (id: string) => theme.setTheme(id),
-            defaultValue: 'main'
+            defaultValue: theme.currentTheme
         })
+
+        theme.mediator.subscribe('theme-options', ({themeName}) => {
+            this.themeBtnBlock.currentVal = themeName;
+        });
     }
 
     setupEvents(engine: GameEngine, {ROWS, COLS, MINES, switcher}: onPlayingLoadProps) {

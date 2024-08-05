@@ -1,3 +1,5 @@
+import { cacher } from "./caching";
+
 type ColorType = [number, number, number];
 
 export interface ThemeType {
@@ -56,7 +58,7 @@ class ThemeChangesMediator {
         })
     }
 
-    subscribe(key: string, cb: ()=>void) {
+    subscribe(key: string, cb: ThemeChangesMediatorCallback) {
         this.callbacks.set(key, cb);
     }
 
@@ -84,7 +86,13 @@ class ThemeProcessor {
             '--border-gradient-white': 'borderWhite',
         }
 
-        this.setTheme(props.defaultTheme);
+        this.setTheme(props.defaultTheme, false);
+
+        cacher.readSetting('theme')
+            .then((theme) => { 
+                this.setTheme(theme, false)
+            })
+            .catch((error) => console.error(error));
     }
 
     setCSSVars() {
@@ -94,7 +102,7 @@ class ThemeProcessor {
         });
     }
 
-    setTheme(theme: ThemeName) {
+    setTheme(theme: ThemeName, save: boolean = true) {
         if (theme === this.currentTheme) {
             return;
         }
@@ -102,6 +110,13 @@ class ThemeProcessor {
         this.currentTheme = theme;
         this.setCSSVars();
         this.mediator.publishChangeTheme(theme);
+
+        if (save) {
+            cacher.putSetting({
+                id: 'theme',
+                value: theme
+            });
+        }
     }
 }
 
