@@ -1,5 +1,5 @@
-import { HIDDEN_OVERFLOW, MINE_VALUE } from "./consts";
-import { permutations, randInt, range } from "./utils";
+import { HIDDEN_OVERFLOW, MINE_VALUE } from "../consts";
+import { permutations, randInt, range } from "../utils";
 
 interface MapGeneratorProps {
     cols: number
@@ -82,9 +82,13 @@ export class MapGenerator {
         let row = randInt(this.rows);
         let col = randInt(this.cols);
 
-        while (this.matrix[row][col] === MINE_VALUE + HIDDEN_OVERFLOW) {
+        let tries = 0;
+        const maxTries = 10;
+
+        while (this.matrix[row][col] === MINE_VALUE + HIDDEN_OVERFLOW && tries < maxTries) {
             row = randInt(this.rows);
             col = randInt(this.cols);
+            tries++;
         }
 
         return [row, col];

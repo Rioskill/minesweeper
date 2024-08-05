@@ -1,5 +1,5 @@
-import { CoordsT, makeCoords } from "./models"
-import { addVectors, clamp, clampCoords, getCollisionPos, substractVectors } from "./utils"
+import { CoordsT, makeCoords } from "../models"
+import { addVectors, clamp, clampCoords, getCollisionPos, substractVectors } from "../utils"
 
 interface MinesweeperViewProps {
     fullSize: CoordsT

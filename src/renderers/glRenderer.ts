@@ -1,7 +1,7 @@
-import { GLBuffer } from "../buffer";
-import { GameMap } from "../gameMap";
+import { GLBuffer } from "./buffer";
+import { GameMap } from "../core/gameMap";
 import { CoordsT, makeCoords } from "../models";
-import { loadTexture } from "../texture";
+import { loadTexture } from "./texture";
 import { theme, ThemeName, themes } from "../themes";
 import { addVectors } from "../utils";
 import { Renderer, RenderProps } from "./models";

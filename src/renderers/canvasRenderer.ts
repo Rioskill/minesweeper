@@ -1,7 +1,7 @@
 import { COLL, HIDDEN_OVERFLOW, MINE_VALUE, ROWL} from "../consts";
-import { GameMap } from "../gameMap";
-import { CoordsT, makeCoords } from "../models";
-import { getStyleFromColor, theme, ThemeName, themes } from "../themes";
+import { GameMap } from "../core/gameMap";
+import { CoordsT } from "../models";
+import { theme, ThemeName } from "../themes";
 import { Renderer, RenderProps } from "./models";
 
 interface CanvasRendererProps {

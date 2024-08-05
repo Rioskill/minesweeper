@@ -1,4 +1,4 @@
-import { MapGenerator } from "./mapGeneration";
+import { MapGenerator } from "./core/mapGeneration";
 
 interface StartMessageData {
     cols: number

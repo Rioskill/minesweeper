@@ -1,4 +1,4 @@
-import { ToggleBtnBlock } from "./components";
+import { ToggleBtnBlock } from "./components/toggleBtnBlock";
 import { Page } from "./page";
 import { PageElement, PageSwitcher } from "./pageElement";
 
@@ -32,17 +32,17 @@ const gameModes: {
     'easy': {
         cols: 9,
         rows: 9,
-        mines: 6
+        mines: 10
     },
     'medium': {
         cols: 16,
         rows: 16,
-        mines: 64
+        mines: 40
     },
     'hard': {
-        cols: 25,
-        rows: 25,
-        mines: 300
+        cols: 30,
+        rows: 16,
+        mines: 99
     }
 }
 
@@ -64,7 +64,7 @@ export class MenuPage implements Page {
     constructor() {
         this.cols = 9;
         this.rows = 9;
-        this.mines = 80;
+        this.mines = 10;
 
         this.gameModeBtnBlock = new ToggleBtnBlock({
             buttons: [

@@ -1,17 +1,17 @@
 import { displayBlock } from "../display/display";
-import { GameEngine } from "../gameEngine";
-import { GameMap } from "../gameMap";
+import { GameEngine } from "../core/gameEngine";
+import { GameMap } from "../core/gameMap";
 import { makeCoords } from "../models";
 import { COLL, ROWL, CHUNKW, CHUNKH } from "../consts";
-import { GameMenu } from "../menu";
+import { GameMenu } from "./components/menu";
 import { GLRenderer } from "../renderers/glRenderer";
-import { MinesweeperView } from "../view";
+import { MinesweeperView } from "../core/view";
 import { Page } from "./page";
 import { onLoadingLoadProps } from "./loadingPage";
 import { CanvasRenderer } from "../renderers/canvasRenderer";
 import { Renderer } from "../renderers/models";
 import { theme, ThemeName } from "../themes";
-import { EventType, ToggleBtnBlock } from "./components";
+import { EventType, ToggleBtnBlock } from "./components/toggleBtnBlock";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
     mapData: number[][]
@@ -70,6 +70,7 @@ export class PlayingPage implements Page {
         const canvas = mainView.canvas;
 
         const restartBtn = document.getElementById('restart-btn');
+        const mainMenuBtn = document.getElementById('main-menu-btn');
 
         this.events = [
             {
@@ -165,6 +166,13 @@ export class PlayingPage implements Page {
                     if (evt.code === 'ShiftLeft') {
                         this.shiftPressed = false;
                     }
+                }
+            },
+            {
+                name: 'click',
+                target: mainMenuBtn,
+                listener: () => {
+                    switcher.changePage('mainMenu', switcher);
                 }
             }
         ]
@@ -430,6 +438,12 @@ export class PlayingPage implements Page {
                     tag: 'section',
                     class: 'options-section',
                     children: [
+                        {
+                            tag: 'button',
+                            text: 'Main Menu',
+                            id: 'main-menu-btn',
+                            class: 'bulging btn'
+                        },
                         this.rendererBtnBlock.render(),
                         this.themeBtnBlock.render()
                     ]

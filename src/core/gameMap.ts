@@ -1,7 +1,6 @@
-import { MINE_VALUE, FLAG_OVERFLOW, HIDDEN_OVERFLOW } from "./consts";
+import { FLAG_OVERFLOW, HIDDEN_OVERFLOW } from "../consts";
 import { MapGenerator } from "./mapGeneration";
-import { CoordsT, makeCoords } from "./models";
-import { permutations, randInt, range } from "./utils";
+import { CoordsT } from "../models";
 
 interface GameMapProps {
     ROWS: number

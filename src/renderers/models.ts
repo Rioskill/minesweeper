@@ -1,6 +1,6 @@
-import { GameMap } from "../gameMap"
+import { GameMap } from "../core/gameMap"
 import { CoordsT } from "../models"
-import { MinesweeperView } from "../view"
+import { MinesweeperView } from "../core/view"
 
 export interface RenderProps {
     viewportSize: CoordsT

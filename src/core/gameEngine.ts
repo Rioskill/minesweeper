@@ -1,10 +1,9 @@
-import { HIDDEN_OVERFLOW, MINE_VALUE } from "./consts";
+import { HIDDEN_OVERFLOW, MINE_VALUE } from "../consts";
 import { GameMap } from "./gameMap";
-import { GLRenderer } from "./renderers/glRenderer";
-import { CoordsT, makeCoords } from "./models";
-import { addVectors } from "./utils";
+import { CoordsT, makeCoords } from "../models";
+import { addVectors } from "../utils";
 import { MinesweeperView } from "./view";
-import { Renderer } from "./renderers/models";
+import { Renderer } from "../renderers/models";
 import { MapGenerator } from "./mapGeneration";
 
 interface GameEngineProps {

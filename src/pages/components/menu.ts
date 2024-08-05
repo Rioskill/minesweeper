@@ -1,4 +1,4 @@
-import { setDisplayValue } from "./display/display";
+import { setDisplayValue } from "../../display/display";
 
 interface GameMenuProps {
     minesDisplay: HTMLElement;
