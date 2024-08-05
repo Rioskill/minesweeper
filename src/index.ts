@@ -35,10 +35,15 @@ const main = () => {
 
     cacher.loadPrevSession()
         .then((session) => {
+            if (Object.values(session).includes(undefined)) {
+                console.log('previous session not found');
+                return;
+            }
+
             switcher.changePage('playing', {
                 ROWS: session.rows,
                 COLS: session.cols,
-                MINES: 9,
+                MINES: session.mines,
                 mapData: session.mapData,
                 offset: session.offset,
                 switcher: switcher
