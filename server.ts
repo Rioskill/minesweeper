@@ -18,7 +18,7 @@ Bun.serve({
         console.log(url.pathname)
 
         if (url.pathname === '/') {
-            return new Response(Bun.file("src/index.html"));
+            return new Response(Bun.file("index.html"));
         }
 
         const file = Bun.file(`.${url.pathname}`);
