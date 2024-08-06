@@ -1926,6 +1926,9 @@ class PlayingPage {
           }
           return cnt;
         }, 0);
+        if (this.engine.openedTiles > 0) {
+          this.engine.firstTileOpen = false;
+        }
       }
       console.log(this.engine.openedTiles);
       mainView.onOffsetUpdate = () => this.engine.updateOffset();
