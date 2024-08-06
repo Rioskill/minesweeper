@@ -16,7 +16,8 @@ import { Matrix, MatrixDataType } from "../core/matrix";
 import { cacher } from "../caching";
 
 interface onPlayingLoadProps extends onLoadingLoadProps {
-    offset?: [number, number],
+    offset?: [number, number]
+    gameGoing?: boolean
     mapData: MatrixDataType
 }
 
@@ -247,11 +248,12 @@ export class PlayingPage implements Page {
             rows: this.engine.map.ROWS,
             mines: this.engine.map.minesTotal,
             mapData: this.engine.map.matrix.data,
-            offset: unfoldCoords(this.engine.view.offset)
+            offset: unfoldCoords(this.engine.view.offset),
+            gameGoing: this.engine.gameGoing
         })
     }
 
-    onLoad({ROWS, COLS, MINES, mapData, switcher, offset}: onPlayingLoadProps) {
+    onLoad({ROWS, COLS, MINES, mapData, switcher, offset, gameGoing}: onPlayingLoadProps) {
         const canvas = document.querySelector("canvas")!;
     
         document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
@@ -350,6 +352,10 @@ export class PlayingPage implements Page {
                 } else {
                     menu.setRestartBtnStatus('dead');
                 }
+            }
+
+            if (gameGoing === false) {
+                this.engine.stopGame('lose');
             }
     
             this.startGame(this.engine);

@@ -28,6 +28,9 @@ export const negate = (coords: CoordsT) => {
 
 export const range = (n: number, m?: number): number[] => {
     if (m === undefined) {
+        if (n <= 0) {
+            return [];
+        }
         return [...Array(n).keys()];
     }
 
