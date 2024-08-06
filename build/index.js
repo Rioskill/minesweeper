@@ -406,6 +406,9 @@ var substractVectors = (first, second) => {
 };
 var range = (n, m) => {
   if (m === undefined) {
+    if (n <= 0) {
+      return [];
+    }
     return [...Array(n).keys()];
   }
   return range(m - n).map((x) => x + n);
@@ -624,7 +627,9 @@ class GameEngine {
   stopGame(status = "lose") {
     this.gameGoing = false;
     this.showAllMines();
-    this.onGameOver(status);
+    if (this.onGameOver) {
+      this.onGameOver(status);
+    }
   }
   updateOffset() {
     this.renderer.updateOffset(this.map, this.view.offset);
@@ -1103,6 +1108,7 @@ class Cacher {
     sessionObj.put({ id: "mines", value: session.mines });
     sessionObj.put({ id: "mapData", value: session.mapData });
     sessionObj.put({ id: "offset", value: session.offset });
+    sessionObj.put({ id: "gameGoing", value: session.gameGoing });
   }
   async loadPrevSession() {
     const readSessionProp = (id) => this.safeRead("Session", id);
@@ -1111,13 +1117,15 @@ class Cacher {
     const mines = readSessionProp("mines");
     const mapData = readSessionProp("mapData");
     const offset = readSessionProp("offset");
-    const session = await Promise.all([cols, row, mines, mapData, offset]);
+    const gameGoing = readSessionProp("gameGoing");
+    const session = await Promise.all([cols, row, mines, mapData, offset, gameGoing]);
     return {
       cols: session[0],
       rows: session[1],
       mines: session[2],
       mapData: session[3],
-      offset: session[4]
+      offset: session[4],
+      gameGoing: session[5]
     };
   }
 }
@@ -1838,10 +1846,11 @@ class PlayingPage {
       rows: this.engine.map.ROWS,
       mines: this.engine.map.minesTotal,
       mapData: this.engine.map.matrix.data,
-      offset: unfoldCoords(this.engine.view.offset)
+      offset: unfoldCoords(this.engine.view.offset),
+      gameGoing: this.engine.gameGoing
     });
   }
-  onLoad({ ROWS, COLS, MINES, mapData, switcher, offset }) {
+  onLoad({ ROWS, COLS, MINES, mapData, switcher, offset, gameGoing }) {
     const canvas = document.querySelector("canvas");
     document.documentElement.style.setProperty("--max-view-width", `${COLL * COLS + 14}px`);
     document.documentElement.style.setProperty("--max-view-height", `${ROWL * ROWS + 14}px`);
@@ -1920,6 +1929,9 @@ class PlayingPage {
           menu2.setRestartBtnStatus("dead");
         }
       };
+      if (gameGoing === false) {
+        this.engine.stopGame("lose");
+      }
       this.startGame(this.engine);
       cacher.readSetting("renderer").then((rendererName) => {
         console.log("rendererName", rendererName);
@@ -2089,6 +2101,7 @@ var main = () => {
       MINES: session.mines,
       mapData: session.mapData,
       offset: session.offset,
+      gameGoing: session.gameGoing,
       switcher
     });
   }).catch((reason) => {

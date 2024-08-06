@@ -31,6 +31,9 @@ var substractVectors = (first, second) => {
 };
 var range = (n, m) => {
   if (m === undefined) {
+    if (n <= 0) {
+      return [];
+    }
     return [...Array(n).keys()];
   }
   return range(m - n).map((x) => x + n);

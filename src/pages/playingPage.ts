@@ -208,8 +208,8 @@ export class PlayingPage implements Page {
             throw new Error('your browser does not support WebGL');
         }
     
-        const vSourceP = fetch('/src/shaders/vertexShader.vs');
-        const fSourceP = fetch('/src/shaders/fragmentShader.fs');
+        const vSourceP = fetch('/minesweeper/src/shaders/vertexShader.vs');
+        const fSourceP = fetch('/minesweeper/src/shaders/fragmentShader.fs');
     
         const vSource = await vSourceP.then(source => source.text());
         const fSource = await fSourceP.then(source => source.text());
