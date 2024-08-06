@@ -46,6 +46,7 @@ const main = () => {
                 MINES: session.mines,
                 mapData: session.mapData,
                 offset: session.offset,
+                gameGoing: session.gameGoing,
                 switcher: switcher
             })
         })

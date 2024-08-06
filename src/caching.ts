@@ -30,6 +30,7 @@ interface SessionProps {
     mines: number
     mapData: Uint8Array
     offset: [number, number]
+    gameGoing: boolean
 }
 
 class Cacher {
@@ -191,6 +192,7 @@ class Cacher {
         sessionObj.put({id: 'mines', value: session.mines});
         sessionObj.put({id: 'mapData', value: session.mapData});
         sessionObj.put({id: 'offset', value: session.offset});
+        sessionObj.put({id: 'gameGoing', value: session.gameGoing});
     }
 
     async loadPrevSession(): Promise<SessionProps> {
@@ -201,15 +203,17 @@ class Cacher {
         const mines = readSessionProp('mines') as Promise<number>;
         const mapData = readSessionProp('mapData') as Promise<Uint8Array>;
         const offset = readSessionProp('offset') as Promise<[number, number]>;
+        const gameGoing = readSessionProp('gameGoing') as Promise<boolean>;
 
-        const session = await Promise.all([cols, row, mines, mapData, offset]);
+        const session = await Promise.all([cols, row, mines, mapData, offset, gameGoing]);
 
         return {
             cols: session[0],
             rows: session[1],
             mines: session[2],
             mapData: session[3],
-            offset: session[4]
+            offset: session[4],
+            gameGoing: session[5],
         };
     }
 }
