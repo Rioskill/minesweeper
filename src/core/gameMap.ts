@@ -15,8 +15,6 @@ interface GameMapProps {
 }
 
 export class GameMap {
-    // map: number[][]
-    // matrix: number[][]
     matrix: Matrix
 
     ROWS: number

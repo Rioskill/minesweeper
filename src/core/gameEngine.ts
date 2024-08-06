@@ -21,7 +21,7 @@ export class GameEngine {
     firstTileOpen: boolean
 
     gameGoing: boolean
-    onGameOver: (status: 'win' | 'lose')=>void
+    onGameOver?: (status: 'win' | 'lose')=>void
 
     openedTiles: number
 
@@ -41,7 +41,10 @@ export class GameEngine {
     stopGame(status: 'win' | 'lose' = 'lose') {
         this.gameGoing = false;
         this.showAllMines();
-        this.onGameOver(status);
+
+        if (this.onGameOver) {
+            this.onGameOver(status);
+        }
     }
 
     updateOffset() {
