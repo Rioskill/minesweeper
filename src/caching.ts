@@ -205,7 +205,14 @@ class Cacher {
         const offset = readSessionProp('offset') as Promise<[number, number]>;
         const gameGoing = readSessionProp('gameGoing') as Promise<boolean>;
 
-        const session = await Promise.all([cols, row, mines, mapData, offset, gameGoing]);
+        const session = await Promise.all([
+            cols,
+            row,
+            mines,
+            mapData,
+            offset,
+            gameGoing,
+        ]);
 
         return {
             cols: session[0],

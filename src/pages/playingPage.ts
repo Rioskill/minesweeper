@@ -249,7 +249,7 @@ export class PlayingPage implements Page {
             mines: this.engine.map.minesTotal,
             mapData: this.engine.map.matrix.data,
             offset: unfoldCoords(this.engine.view.offset),
-            gameGoing: this.engine.gameGoing
+            gameGoing: this.engine.gameGoing,
         })
     }
 
@@ -271,7 +271,7 @@ export class PlayingPage implements Page {
             CHUNKH,
             CHUNKW
         });
-    
+        
         map.minesRemaining = MINES;
         map.minesTotal = MINES;
     
@@ -332,6 +332,17 @@ export class PlayingPage implements Page {
                 view: mainView,
                 renderer: renderer
             })
+
+            if (mapData) {
+                this.engine.openedTiles = mapData.reduce((cnt, el) => {
+                    if (el < 100) {
+                        return cnt + 1;
+                    }
+                    return cnt;
+                }, 0)
+            }
+            
+            console.log(this.engine.openedTiles)
     
             mainView.onOffsetUpdate = () => this.engine!.updateOffset();
     
