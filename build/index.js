@@ -1118,7 +1118,14 @@ class Cacher {
     const mapData = readSessionProp("mapData");
     const offset = readSessionProp("offset");
     const gameGoing = readSessionProp("gameGoing");
-    const session = await Promise.all([cols, row, mines, mapData, offset, gameGoing]);
+    const session = await Promise.all([
+      cols,
+      row,
+      mines,
+      mapData,
+      offset,
+      gameGoing
+    ]);
     return {
       cols: session[0],
       rows: session[1],
@@ -1912,6 +1919,15 @@ class PlayingPage {
         view: mainView,
         renderer
       });
+      if (mapData) {
+        this.engine.openedTiles = mapData.reduce((cnt, el) => {
+          if (el < 100) {
+            return cnt + 1;
+          }
+          return cnt;
+        }, 0);
+      }
+      console.log(this.engine.openedTiles);
       mainView.onOffsetUpdate = () => this.engine.updateOffset();
       this.setupEvents(this.engine, {
         ROWS,
